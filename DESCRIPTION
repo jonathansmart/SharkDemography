@@ -1,0 +1,30 @@
+Package: SharkDemography
+Type: Package
+Date: 2020
+Title: Shark demographic analyses using Leslie matrix models
+Version: 0.0.9000
+Author: person("Jonathan", "Smart", email = "jonathan.smart@sa.gov.au", role = c("aut", "cre", "ctb"))
+Maintainer: Jonathan Smart <jonathan.smart@sa.gov.au>
+Description: Determine intrinsic rates of increase (lambda) and other demographic characteristics for shark
+    species using age-structured Leslie matrix models.
+Encoding: UTF-8
+LazyData: true
+Depends: R (>= 3.3)
+Imports: MASS,
+    plyr,
+    akima,
+    magrittr,
+    dplyr,
+    readr,
+    tidyr,
+    popbio,
+    iterators,
+    parallel,
+    doFuture,
+    doParallel,
+    foreach
+RoxygenNote: 7.0.2
+License: GPL-3
+Suggests: knitr,
+    rmarkdown
+VignetteBuilder: knitr
