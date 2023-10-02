@@ -2,7 +2,7 @@ Package: SharkDemography
 Type: Package
 Date: 2020
 Title: Shark demographic analyses using Leslie matrix models
-Version: 0.0.9000
+Version: 0.0.9100
 Author: person("Jonathan", "Smart", email = "jonathan.smart@sa.gov.au", role = c("aut", "cre", "ctb"))
 Maintainer: Jonathan Smart <jonathan.smart@sa.gov.au>
 Description: Determine intrinsic rates of increase (lambda) and other demographic characteristics for shark
