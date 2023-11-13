@@ -121,7 +121,7 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, M.estim
   ### Error messages --------------
 
 
-  if(class(data) != "Demography.inputs") stop("Input data is not the correct based on the demography data list")
+  if(!inherits(data,"Demography.inputs")) stop("Input data is not the correct based on the demography data list")
 
   if(!data$growth$model.type %in%  c("Von Bertalanffy", "logistic", "Gompertz"))
     stop("Growth model type not correctly specified")
@@ -607,7 +607,7 @@ Estimate_eigenvectors <- function(n = 1000, data, M.estimators = NULL){
 
   ## Error messages ------------------
 
-  if(class(data) != "Demography.inputs") stop("Input data is not the correct based on the demography data list")
+  if(!inherits(data,"Demography.inputs")) stop("Input data is not the correct based on the demography data list")
 
   if(!data$growth$model.type %in%  c("Von Bertalanffy", "logistic", "Gompertz"))
     stop("Growth model type not correctly specified")
@@ -953,7 +953,7 @@ Estimate_mortality_dists <- function(n = 1000, data, M.estimators = NULL){
 
   ## Error messages ------------------
 
-  if(class(data) != "Demography.inputs") stop("Input data is not the correct based on the demography data list")
+  if(!inherits(data,"Demography.inputs")) stop("Input data is not the correct based on the demography data list")
 
   if(!data$growth$model.type %in%  c("Von Bertalanffy", "logistic", "Gompertz"))
     stop("Growth model type not correctly specified")
