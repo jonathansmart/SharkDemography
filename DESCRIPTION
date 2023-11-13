@@ -14,11 +14,8 @@ Encoding: UTF-8
 LazyData: true
 Depends: R (>= 3.3)
 Imports: MASS,
-    plyr,
     interp,
-    magrittr,
     dplyr,
-    readr,
     tidyr,
     popbio,
     iterators,
@@ -27,7 +24,7 @@ Imports: MASS,
     doParallel,
     foreach
 RoxygenNote: 7.2.3
-License: GPL-3
+License: GPL (>= 3)
 Suggests: knitr,
     rmarkdown
 VignetteBuilder: knitr
