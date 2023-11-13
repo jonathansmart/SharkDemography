@@ -1,0 +1,40 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# SharkDemography
+
+<!-- badges: start -->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3777741.svg)](https://doi.org/10.5281/zenodo.3777741)
+[![R-CMD-check](https://github.com/jonathansmart/SharkDemography/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/jonathansmart/SharkDemography/actions/workflows/R-CMD-check.yaml)
+<!-- badges: end -->
+
+SharkDemography is a package that will run Leslie Matrix models using Monte Carlo simulations for any specified shark species. This package was developed during the publication of:
+
+Smart, JJ, White, WT, Baje, L, et al. (2020) Can multi-species shark longline fisheries be managed sustainably using size limits? Theoretically, yes. Realistically, no. J Appl Ecol. 2020; 57: 1847–1860. https://doi.org/10.1111/1365-2664.13659
+
+The data and code to run the package are available on Dryad at https://datadryad.org/stash/dataset/doi:10.5061/dryad.pzgmsbch4.
+
+This code will demonstrate how to run the package and reproduce the results of Smart et al (2020). A forthcoming vignette will eventually be written based on a simplified version of these analyses.
+
+
+## Installation
+
+You can install the development version of SharkDemography from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("jonathansmart/SharkDemography")
+```
+
