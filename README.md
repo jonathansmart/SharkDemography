@@ -18,7 +18,8 @@ longline fisheries be managed sustainably using size limits?
 Theoretically, yes. Realistically, no. J Appl Ecol. 2020; 57: 1847–1860.
 <https://doi.org/10.1111/1365-2664.13659>
 
-The data and code to run the package are available on Dryad at
+The data and code to run this analysis using the package are available
+on Dryad at
 <https://datadryad.org/stash/dataset/doi:10.5061/dryad.pzgmsbch4>.
 
 This code will demonstrate how to run the package and reproduce the

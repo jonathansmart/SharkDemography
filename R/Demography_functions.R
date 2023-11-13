@@ -1631,7 +1631,7 @@ Simulate_F_critical <- function(n = 1000, .data, M.estimators = NULL, max.F = 0.
 #' @return A data.frame with three columns: MinAge, MaxAge and 'F.'. These represent the age at the
 #'     start of a harvest slot, the age at the end of the harvest slot and the F for that harvest slot.
 #' @export
-#' @import akima
+#' @import interp
 
 Simulate_harvest_slots <- function(n, data,  M.estimators = NULL, Age.mid.point, HS.width, max.F){
 
@@ -1675,8 +1675,8 @@ Simulate_harvest_slots <- function(n, data,  M.estimators = NULL, Age.mid.point,
 
    tryCatch(
     {
-      interp.data <- akima::interp(Results$MinAge, Results$MaxAge, Results$F., nx = 300, ny = 300, duplicate = "mean");
-      final_results <- interp.data %>% akima::interp2xyz() %>% as.data.frame() %>% na.omit;
+      interp.data <- interp::interp(Results$MinAge, Results$MaxAge, Results$F., nx = 300, ny = 300, duplicate = "mean");
+      final_results <- interp.data %>% interp::interp2xyz() %>% as.data.frame() %>% na.omit;
       names(final_results) <- c("MinAge", "MaxAge", "F.");
     },
     error=function(e){
