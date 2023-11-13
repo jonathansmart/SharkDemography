@@ -1,0 +1,37 @@
+citHeader("To cite AquaticLifeHistory use:")
+
+year <- sub("-.*", "", meta$Date)
+note <- sprintf("R package version %s", meta$Version)
+
+bibentry(
+  bibtype = "Manual",
+  title = "SharkDemography: Shark Demographic Analyses using Leslie Matrix Models",
+  author = c(person("Jonathan", "Smart")),
+  year = year,
+  note = note,
+  url = "https://github.com/jonathansmart/SharkDemography",
+  textVersion = paste("Smart J", year,
+                      "SharkDemography: Shark Demographic Analyses using Leslie Matrix Models",
+                      "https://github.com/jonathansmart/SharkDemography")
+)
+
+bibentry(
+  bibtype = "Article",
+  author = c(as.person("Jonathan Smart"),
+  as.person("William White"),
+  as.person("Leontine Baje"),
+                      as.person("Andrew Chin"),
+                      as.person("Brooke D'Alberto"),
+                      as.person("Michael Grant"),
+                      as.person("Sushmita Mukherji"),
+                      as.person("Colin Simpfendorfer")),
+  title = "Can multi-species shark longline fisheries be managed sustainably using size limits? Theoretically, yes. Realistically, no",
+  journal = "Journal of Applied Ecology",
+  year = "2020",
+  volume = "57",
+  number = "9",
+  pages = "1847--1860",
+  url = "https://besjournals.onlinelibrary.wiley.com/doi/abs/10.1111/1365-2664.13659",
+  textVersion = paste("Smart, JJ, White, WT, Baje, L, et al. Can multi-species shark longline fisheries be managed sustainably using size limits? Theoretically, yes. Realistically, no. J Appl Ecol. 2020; 57: 1847–1860. https://doi.org/10.1111/1365-2664.13659")
+
+)
