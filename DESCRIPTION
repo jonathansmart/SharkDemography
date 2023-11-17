@@ -1,30 +1,40 @@
 Package: SharkDemography
 Type: Package
-Date: 2023-11-13
 Title: Shark Demographic Analyses using Leslie Matrix Models
 Version: 1.0.0
 Authors@R: person("Jonathan", "Smart", 
     email = "jonsmartphd@gmail.com", 
-    role = c("aut", "cre", "ctb"),
+    role = c("aut", "cre", "ctb", 'cph'),
     comment = c(ORCID = "0000-0003-2070-3208"))
 Maintainer: Jonathan Smart <jonsmartphd@gmail.com>
-Description: Determine intrinsic rates of increase (lambda) and other demographic characteristics for shark
-    species using age-structured Leslie matrix models. 
+Description: Run Leslie Matrix models using Monte Carlo simulations for any specified shark species. 
+    This package was developed during the publication of Smart, JJ, White, WT, Baje, L, et al. (2020)
+    "Can multi-species shark longline fisheries be managed sustainably using size limits? 
+    Theoretically, yes. Realistically, no".J Appl Ecol. 2020; 57; 1847–1860. 
+    <https://doi.org/10.1111/1365-2664.13659>.
 Encoding: UTF-8
 LazyData: true
 Depends: R (>= 3.3)
-Imports: MASS,
+Imports: 
+    MASS,
     interp,
     dplyr,
     tidyr,
+    readr,
     popbio,
     iterators,
     parallel,
     doFuture,
     doParallel,
-    foreach
+    foreach,
+    magrittr
 RoxygenNote: 7.2.3
 License: GPL (>= 3)
-Suggests: knitr,
-    rmarkdown
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
 VignetteBuilder: knitr
+URL: https://github.com/jonathansmart/SharkDemography
+BugReports: https://github.com/jonathansmart/SharkDemography/issues
+Config/testthat/edition: 3
