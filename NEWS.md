@@ -1,3 +1,3 @@
-# SharkDemography 1.0.0
+# SharkDemography 1.1.0
 
 * Initial CRAN submission.

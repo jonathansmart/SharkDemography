@@ -1,7 +1,7 @@
 Package: SharkDemography
 Type: Package
 Title: Shark Demographic Analyses using Leslie Matrix Models
-Version: 1.0.0
+Version: 1.1.0
 Authors@R: person("Jonathan", "Smart", 
     email = "jonsmartphd@gmail.com", 
     role = c("aut", "cre", "ctb", 'cph'),
@@ -36,4 +36,3 @@ Suggests:
 VignetteBuilder: knitr
 URL: https://github.com/jonathansmart/SharkDemography
 BugReports: https://github.com/jonathansmart/SharkDemography/issues
-
