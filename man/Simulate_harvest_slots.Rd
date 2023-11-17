@@ -8,9 +8,9 @@ Simulate_harvest_slots(
   n,
   data,
   M.estimators = NULL,
-  Age.mid.point,
-  HS.width,
-  max.F
+  Age.mid.point = NULL,
+  HS.width = NULL,
+  max.F = 1
 )
 }
 \arguments{
@@ -29,7 +29,7 @@ then all applicable estimators could be chosen.}
 a mid point and will have HS.Width subtracted and added to it to determine AAFC and AALC,
 respectively.}
 
-\item{HS.width}{A vector of widths for the Harvest slots. Widths are subtracted and added to mid points to determine
+\item{HS.width}{A vector of widths for the Harvest slots in years. Widths are subtracted and added to mid points to determine
 the AAFC and AALC in each sim.}
 
 \item{max.F}{The maximum value of F for simulations}
@@ -42,4 +42,17 @@ A data.frame with three columns: MinAge, MaxAge and 'F.'. These represent the ag
 This is a wrapper function for `Calculate_demography` which runs this function
     using different values of AAFC, AALC and F to simulate Havest Slot options. The Fcritical is retuned
     for each simulation to show the max level of F needed to sustain a stable population.
+}
+\examples{
+\donttest{
+# load Silky shark data produced by create_data_input()
+# Type `?create_data_input()` for details
+data("Silky_data")
+
+# Run function to get conduct an F critical analysis for different harvest slots using
+# Monte Carlo Simulations using for all available natural mortality estimators.
+# Set n = at least 1000 for full analysis but use n = 10 for testing given long run times
+
+Simulate_harvest_slots(n = 10, Silky_data,Age.mid.point = 0:28, HS.width = 0:8)
+}
 }

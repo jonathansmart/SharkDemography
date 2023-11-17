@@ -62,3 +62,15 @@ Using provided life history estimates from various sources, a demographic
 \item{M.estimator}{The natural mortality estimator randomly used in this analysis}
 }
 }
+\examples{
+# load Silky shark data produced by create_data_input()
+# Type `?create_data_input()` for details
+data("Silky_data")
+
+# run a single Leslie Matrix analysis with random draws from biological data
+# distributions. Use `Simulate_demography()` to run Monte Carlo Simulations
+# using this function
+
+Calculate_demography(Silky_data)
+
+}

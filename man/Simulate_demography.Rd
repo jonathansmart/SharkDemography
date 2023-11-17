@@ -47,3 +47,14 @@ A list with two data.frames. The first is the summary of the Monte Carlo simulat
 This is a wrapper function for `Calculate_demography` which runs this function
     the specified number of times.
 }
+\examples{
+# load Silky shark data produced by create_data_input()
+# Type `?create_data_input()` for details
+data("Silky_data")
+
+# Run function to get conduct Monte Carlo Simulations using
+# `Calculate_demography()`  for all available natural mortality estimators.
+# Set n = at least 1000 for full analysis but use n = 100 for testing
+
+Simulate_demography(n = 100, Silky_data)
+}

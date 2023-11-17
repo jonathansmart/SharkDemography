@@ -4,7 +4,13 @@
 \alias{Simulate_F_critical}
 \title{Estimate F critical through simulations}
 \usage{
-Simulate_F_critical(n = 1000, .data, M.estimators = NULL, max.F = 0.3)
+Simulate_F_critical(
+  n = 1000,
+  .data,
+  M.estimators = NULL,
+  max.F = 0.3,
+  n_cores = 1
+)
 }
 \arguments{
 \item{n}{The number of simulations to be run. 1000 is recomended but smaller numbers
@@ -20,6 +26,9 @@ or a vector of estimators. These can include: "Pet.Wro","Jensen.mat","Chen.Yuan"
 then all applicable estimators could be chosen.}
 
 \item{max.F}{The maximum value of F for simulations}
+
+\item{n_cores}{The number of cores to be used for parallel processing. It should be 1 core less than the
+maximum number available.}
 }
 \value{
 A list with two data.frames. The first provides the mean F critical with 95\%
@@ -30,4 +39,17 @@ A list with two data.frames. The first provides the mean F critical with 95\%
 This is a wrapper function for `Calculate_demography` which runs this function
     the specified number of times using a range of F values accross the enture age range of
     the population. This determines the rate of population increase at each increment of F.
+}
+\examples{
+\donttest{
+# load Silky shark data produced by create_data_input()
+# Type `?create_data_input()` for details
+data("Silky_data")
+
+# Run function to get conduct an F critical analysis using
+# Monte Carlo Simulations using for all available natural mortality estimators.
+# Set n = at least 1000 for full analysis but use n = 10 for testing given long run times
+
+Simulate_F_critical(n = 10, Silky_data)
+}
 }

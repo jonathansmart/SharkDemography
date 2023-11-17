@@ -26,3 +26,14 @@ This function performs a Monte Carlo simulation analysis which determines
     the distributions of the left and right eigenvector. To facilitate this, maximum age
     is fixed as the minimum value + 20\% for the species.
 }
+\examples{
+# load Silky shark data produced by create_data_input()
+# Type `?create_data_input()` for details
+data("Silky_data")
+
+# Run function to get Eigenvectors from  Monte Carlo simulations for
+# all available natural mortality estimators. Set n = at least 1000 for full
+# analysis but use n = 100 for testing
+
+Estimate_eigenvectors(n = 100, Silky_data)
+}

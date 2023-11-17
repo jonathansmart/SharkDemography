@@ -22,3 +22,51 @@ The demography functions in this package require a large amount of detailed
     of various life history parameters with the class `Demography.inputs`. This function
     creates the template for this input data which can be filled in after it is created.
 }
+\examples{
+######-----------
+# Example code for Silky sharks
+######-----------
+
+silky_data <- create_data_input("logistic - int/slope", t0 = FALSE)
+# Add growth data
+silky_data$`growth`$model.type <- "logistic"
+silky_data$growth$pars$Linf <- 268
+silky_data$growth$pars$k <- 0.14
+silky_data$growth$pars$L0 <- 82.7
+silky_data$growth$se$Linf.se <- 5.8
+silky_data$growth$se$k.se <- 0.006
+silky_data$growth$se$L0.se <- 1.6
+silky_data$growth$corr.matrix <- matrix(ncol = 3, nrow = 3,
+                                        dimnames = list(c("Linf", "k", "L0"),c("Linf", "k", "L0")),
+                                        data = c(1.0000000, -0.907188, 0.6233407,
+                                                -0.9071881,  1.0000000, -0.8572509,
+                                                0.6233407,-0.857250, 1.0000000))
+# Add maturity data
+silky_data$maturity$pars$intercept <- -15.90
+silky_data$maturity$pars$slope <- 1.14
+silky_data$maturity$se$intercept.se <- 2.78258
+silky_data$maturity$se$slope.se <- 0.1971363
+silky_data$maturity$corr.matrix <- matrix(ncol = 2, nrow = 2,
+                                          dimnames = list(c("Intercept", "slope")
+                                          ,c("Intercept", "slope")),
+                                          data = c(1.0000000, -0.9922574,
+                                                   -0.9922574, 1.0000000))
+# max age lower bound
+silky_data$max.age$min <- 28
+
+# Add fecundity info
+silky_data$litter.size$mean <- 10
+silky_data$litter.size$se <- 3
+silky_data$gest.period <- 1
+silky_data$repro.cycle <- 2
+
+# Add TL conversions (if available and required)
+silky_data$Lt.type <- "TL"
+silky_data$Lt.to.Wt$model.type <- "PCL"
+silky_data$Lt.to.Wt$pars$a <- 2.73e-5
+silky_data$Lt.to.Wt$pars$b <- 2.86
+
+silky_data$convert.TL$model.type <- "PCL"
+silky_data$convert.TL$pars$a <- 2.08
+silky_data$convert.TL$pars$b <- 1.32
+}

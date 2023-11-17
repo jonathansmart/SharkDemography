@@ -4,7 +4,7 @@
 \alias{Simulate_AAFC}
 \title{Monte Carlo simulations of Leslie matrix models under varying levels of F and AAFC}
 \usage{
-Simulate_AAFC(n = 1000, .data, M.estimators = NULL, max.AAFC = 15)
+Simulate_AAFC(n = 1000, .data, M.estimators = NULL, max.AAFC = 15, n_cores = 1)
 }
 \arguments{
 \item{n}{The number of simulations to be run. 1000 is recomended but smaller numbers
@@ -22,6 +22,9 @@ then all applicable estimators could be chosen.}
 \item{max.AAFC}{The maximum Age class to be run in the analyses. This does not need to
 be the maximum age for the population and keeping this number reasonable reduces
 run-time.}
+
+\item{n_cores}{The number of cores to be used for parallel processing. It should be 1 core less than the
+maximum number available.}
 }
 \value{
 A list with two data.frames. The first provides Fcritical values for each age class.
@@ -32,4 +35,17 @@ A list with two data.frames. The first provides Fcritical values for each age cl
 This is a wrapper function for `Calculate_demography` which runs this function
     the specified number of times using a range of F and Age-at-first-capture (AAFC)
     values
+}
+\examples{
+\donttest{
+# load Silky shark data produced by create_data_input()
+# Type `?create_data_input()` for details
+data("Silky_data")
+
+# Run function to get conduct an age-at-first-capture (AAFC) analysis using
+# Monte Carlo Simulations using for all available natural mortality estimators.
+# Set n = at least 1000 for full analysis but use n = 10 for testing given long run times
+
+Simulate_AAFC(n = 10, Silky_data)
+}
 }

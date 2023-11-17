@@ -26,3 +26,14 @@ A list which includes a data.frame of the distributions age invariant estimators
 This function performs a Monte Carlo simulation analysis which determines
     the distributions of natural mortality (M) produced by each estimator.
 }
+\examples{
+# load Silky shark data produced by create_data_input()
+# Type `?create_data_input()` for details
+data("Silky_data")
+
+# Run function to get natural mortality distributions from  Monte Carlo
+# simulations for all available natural mortality estimators.
+# Set n = at least 1000 for full analysis but use n = 100 for testing
+
+Estimate_mortality_dists(n = 100, Silky_data)
+}
