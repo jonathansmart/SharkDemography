@@ -41,7 +41,6 @@ This is a wrapper function for `Calculate_demography` which runs this function
     the population. This determines the rate of population increase at each increment of F.
 }
 \examples{
-\donttest{
 # load Silky shark data produced by create_data_input()
 # Type `?create_data_input()` for details
 data("Silky_data")
@@ -51,5 +50,4 @@ data("Silky_data")
 # Set n = at least 1000 for full analysis but use n = 10 for testing given long run times
 
 Simulate_F_critical(n = 10, Silky_data)
-}
 }

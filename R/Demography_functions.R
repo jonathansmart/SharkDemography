@@ -7,7 +7,54 @@
 #'     must be one of `logistic - int/slope`, `logistic - a50/a95`, `normal` or `uniform`.
 #' @param t0 Logical argument regarding whether the growth models included "t0" or "L0" as
 #'     as a parameter. Default is `FALSE`
+#' @examples
+#' ######-----------
+#' # Example code for Silky sharks
+#' ######-----------
 #'
+#' silky_data <- create_data_input("logistic - int/slope", t0 = FALSE)
+#' # Add growth data
+#' silky_data$`growth`$model.type <- "logistic"
+#' silky_data$growth$pars$Linf <- 268
+#' silky_data$growth$pars$k <- 0.14
+#' silky_data$growth$pars$L0 <- 82.7
+
+#' silky_data$growth$se$Linf.se <- 5.8
+#' silky_data$growth$se$k.se <- 0.006
+#' silky_data$growth$se$L0.se <- 1.6
+#' silky_data$growth$corr.matrix <- matrix(ncol = 3, nrow = 3,
+#'                                         dimnames = list(c("Linf", "k", "L0"),c("Linf", "k", "L0")),
+#'                                         data = c(1.0000000, -0.907188, 0.6233407,
+#'                                                 -0.9071881,  1.0000000, -0.8572509,
+#'                                                 0.6233407,-0.857250, 1.0000000))
+#' # Add maturity data
+#' silky_data$maturity$pars$intercept <- -15.90
+#' silky_data$maturity$pars$slope <- 1.14
+#' silky_data$maturity$se$intercept.se <- 2.78258
+#' silky_data$maturity$se$slope.se <- 0.1971363
+#' silky_data$maturity$corr.matrix <- matrix(ncol = 2, nrow = 2,
+#'                                           dimnames = list(c("Intercept", "slope")
+#'                                           ,c("Intercept", "slope")),
+#'                                           data = c(1.0000000, -0.9922574,
+#'                                                    -0.9922574, 1.0000000))
+#' # max age lower bound
+#' silky_data$max.age$min <- 28
+#'
+#' # Add fecundity info
+#' silky_data$litter.size$mean <- 10
+#' silky_data$litter.size$se <- 3
+#' silky_data$gest.period <- 1
+#' silky_data$repro.cycle <- 2
+#'
+#' # Add TL conversions (if available and required)
+#' silky_data$Lt.type <- "TL"
+#' silky_data$Lt.to.Wt$model.type <- "PCL"
+#' silky_data$Lt.to.Wt$pars$a <- 2.73e-5
+#' silky_data$Lt.to.Wt$pars$b <- 2.86
+#'
+#' silky_data$convert.TL$model.type <- "PCL"
+#' silky_data$convert.TL$pars$a <- 2.08
+#' silky_data$convert.TL$pars$b <- 1.32
 #' @return A multi-level list of the class `Demography.inputs`
 #' @export
 #'
@@ -113,6 +160,17 @@ create_data_input <- function(maturity.type, t0 = FALSE){
 #' \item{adult.ratio}{The ratio of fecundity to adult elasticities}
 #' \item{M.estimator}{The natural mortality estimator randomly used in this analysis}
 #' }
+#' @examples
+#' # load Silky shark data produced by create_data_input()
+#' # Type `?create_data_input()` for details
+#' data("Silky_data")
+#'
+#' # run a single Leslie Matrix analysis with random draws from biological data
+#' # distributions. Use `Simulate_demography()` to run Monte Carlo Simulations
+#' # using this function
+#'
+#' Calculate_demography(Silky_data)
+#'
 #' @export
 #' @import popbio
 #'
@@ -530,13 +588,13 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, M.estim
   ### Elasticities-----------------
   # Sometimes the matrix won't invert. When this happens, assign NA's to elasticities
   elast <- eigen.analysis(A)$elasticities
-  elast.fecund <- sum(elast[1,], na.rm = T)
+  elast.fecund <- sum(elast[1,], na.rm = TRUE)
   if( elast.fecund> 1) { elast.fecund <- NA}
-  elast.survival <- apply(elast[2:max.age,],2, sum, na.rm = T)
+  elast.survival <- apply(elast[2:max.age,],2, sum, na.rm = TRUE)
   if( any(elast.survival> 1)) { elast.survival <- rep(NA, length(0:max.age))}
 
-  elast.juv.survival <- sum(elast.survival[1:age_at_first_repro-1], na.rm = T)
-  elast.adult.survival <- sum(elast.survival[age_at_first_repro:max.age], na.rm = T)
+  elast.juv.survival <- sum(elast.survival[1:age_at_first_repro-1], na.rm = TRUE)
+  elast.adult.survival <- sum(elast.survival[age_at_first_repro:max.age], na.rm = TRUE)
 
   juv.ratio <- elast.juv.survival/elast.fecund
 
@@ -600,9 +658,17 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, M.estim
 #'
 #' @return A dataframe with the mean and 95\% quantiles for each eigenvector for each age
 #'     class
+#' @examples
+#' # load Silky shark data produced by create_data_input()
+#' # Type `?create_data_input()` for details
+#' data("Silky_data")
+#'
+#' # Run function to get Eigenvectors from  Monte Carlo simulations for
+#' # all available natural mortality estimators. Set n = at least 1000 for full
+#' # analysis but use n = 100 for testing
+#'
+#' Estimate_eigenvectors(n = 100, Silky_data)
 #' @export
-
-
 Estimate_eigenvectors <- function(n = 1000, data, M.estimators = NULL){
 
   ## Error messages ------------------
@@ -947,7 +1013,17 @@ Estimate_eigenvectors <- function(n = 1000, data, M.estimators = NULL){
 #'     summarised as the mean and 95\% quantiles and dataframes of any age dependent estimators
 #'     with the mean and 95\% quantiles for each age class
 #' @export
-#' @import dplyr tidyr
+#' @examples
+#' # load Silky shark data produced by create_data_input()
+#' # Type `?create_data_input()` for details
+#' data("Silky_data")
+#'
+#' # Run function to get natural mortality distributions from  Monte Carlo
+#' # simulations for all available natural mortality estimators.
+#' # Set n = at least 1000 for full analysis but use n = 100 for testing
+#'
+#' Estimate_mortality_dists(n = 100, Silky_data)
+#' @import dplyr tidyr readr
 
 Estimate_mortality_dists <- function(n = 1000, data, M.estimators = NULL){
 
@@ -1200,9 +1276,9 @@ Estimate_mortality_dists <- function(n = 1000, data, M.estimators = NULL){
   results_list[["Age_invariant_mortality"]] <- as.data.frame(M.table) %>%
     gather(Method, Value) %>%
     group_by(Method) %>%
-    summarise(AVG = mean(Value,na.rm = T),
-              low = quantile(Value, na.rm = T, probs = c(0.025)),
-              high = quantile(Value,na.rm = T,  probs = c(0.975)))
+    summarise(AVG = mean(Value,na.rm = TRUE),
+              low = quantile(Value, na.rm = TRUE, probs = c(0.025)),
+              high = quantile(Value,na.rm = TRUE,  probs = c(0.975)),.groups = "drop_last")
 
 
   if(!all(is.na(P_W_table))){
@@ -1211,11 +1287,11 @@ Estimate_mortality_dists <- function(n = 1000, data, M.estimators = NULL){
       t() %>%
       as.data.frame() %>%
       gather(Age, Value) %>%
-      mutate(Age = parse_number(Age)-1) %>%
+      mutate(Age = readr::parse_number(Age)-1) %>%
       group_by(Age) %>%
-      summarise(AVG = mean(Value,na.rm = T),
-                low = quantile(Value, na.rm = T, probs = c(0.025)),
-                high = quantile(Value,na.rm = T,  probs = c(0.975)))
+      summarise(AVG = mean(Value,na.rm = TRUE),
+                low = quantile(Value, na.rm = TRUE, probs = c(0.025)),
+                high = quantile(Value,na.rm = TRUE,  probs = c(0.975)),.groups = "drop_last")
   }
 
   if(!all(is.na(Chen.Want.table))){
@@ -1225,11 +1301,11 @@ Estimate_mortality_dists <- function(n = 1000, data, M.estimators = NULL){
       t() %>%
       as.data.frame() %>%
       gather(Age, Value) %>%
-      mutate(Age = parse_number(Age)-1) %>%
+      mutate(Age = readr::parse_number(Age)-1) %>%
       group_by(Age) %>%
-      summarise(AVG = mean(Value,na.rm = T),
-                low = quantile(Value, na.rm = T, probs = c(0.025)),
-                high = quantile(Value,na.rm = T,  probs = c(0.975)))
+      summarise(AVG = mean(Value,na.rm = TRUE),
+                low = quantile(Value, na.rm = TRUE, probs = c(0.025)),
+                high = quantile(Value,na.rm = TRUE,  probs = c(0.975)),.groups = "drop_last")
   }
   if(!all(is.na(Charnov.table))){
     Charnov.table <- Charnov.table[rowSums(is.na(Charnov.table))<ncol(Charnov.table),]
@@ -1237,11 +1313,11 @@ Estimate_mortality_dists <- function(n = 1000, data, M.estimators = NULL){
       t() %>%
       as.data.frame() %>%
       gather(Age, Value) %>%
-      mutate(Age = parse_number(Age)-1) %>%
+      mutate(Age = readr::parse_number(Age)-1) %>%
       group_by(Age) %>%
-      summarise(AVG = mean(Value,na.rm = T),
-                low = quantile(Value, na.rm = T, probs = c(0.025)),
-                high = quantile(Value,na.rm = T,  probs = c(0.975)))
+      summarise(AVG = mean(Value,na.rm = TRUE),
+                low = quantile(Value, na.rm = TRUE, probs = c(0.025)),
+                high = quantile(Value,na.rm = TRUE,  probs = c(0.975)),.groups = "drop_last")
   }
   close(pb)
   return(results_list)
@@ -1269,6 +1345,16 @@ Estimate_mortality_dists <- function(n = 1000, data, M.estimators = NULL){
 #'     for all parameters calculated by the `Calculate_demography` function with mean and
 #'     95\% quantiles. The second is all of the results for each parameter from individual
 #'     simulations so that their distributions can be interrogated further.
+#' @examples
+#' # load Silky shark data produced by create_data_input()
+#' # Type `?create_data_input()` for details
+#' data("Silky_data")
+#'
+#' # Run function to get conduct Monte Carlo Simulations using
+#' # `Calculate_demography()`  for all available natural mortality estimators.
+#' # Set n = at least 1000 for full analysis but use n = 100 for testing
+#'
+#' Simulate_demography(n = 100, Silky_data)
 #' @export
 Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, F. = 0, M.estimators = NULL, Verbatim = TRUE){
 
@@ -1338,25 +1424,25 @@ Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, F. = 0, M.est
   #=========================================================================
   # Analyse Monte Carlo outputs
 
-  lambda.summary <- c(mean(lambda.results, na.rm = T),
-                      quantile(lambda.results, c(.025, .975),na.rm = T))
+  lambda.summary <- c(mean(lambda.results, na.rm = TRUE),
+                      quantile(lambda.results, c(.025, .975),na.rm = TRUE))
 
-  G.summary <- c(mean(G.results, na.rm = T),
-                 quantile(G.results, c(.025, .975),na.rm = T))
+  G.summary <- c(mean(G.results, na.rm = TRUE),
+                 quantile(G.results, c(.025, .975),na.rm = TRUE))
 
-  R0.summary <- c(mean(R0.results, na.rm = T),
-                  quantile(R0.results, c(.025, .975),na.rm = T))
+  R0.summary <- c(mean(R0.results, na.rm = TRUE),
+                  quantile(R0.results, c(.025, .975),na.rm = TRUE))
 
-  elast.fecund.summary <- c(mean(elast.fecund, na.rm = T),
-                            quantile(elast.fecund, c(.025, .975),na.rm = T))
-  elast.juv.survival.summary <- c(mean(elast.juv.survival, na.rm = T),
-                                  quantile(elast.juv.survival, c(.025, .975),na.rm = T))
-  elast.adult.survival.summary <- c(mean(elast.adult.survival, na.rm = T),
-                                    quantile(elast.adult.survival, c(.025, .975),na.rm = T))
-  juv.ratio.summary <- c(mean(juv.ratio, na.rm = T),
-                         quantile(juv.ratio, c(.025, .975),na.rm = T))
-  adult.ratio.summary <- c(mean(adult.ratio, na.rm = T),
-                           quantile(adult.ratio, c(.025, .975),na.rm = T))
+  elast.fecund.summary <- c(mean(elast.fecund, na.rm = TRUE),
+                            quantile(elast.fecund, c(.025, .975),na.rm = TRUE))
+  elast.juv.survival.summary <- c(mean(elast.juv.survival, na.rm = TRUE),
+                                  quantile(elast.juv.survival, c(.025, .975),na.rm = TRUE))
+  elast.adult.survival.summary <- c(mean(elast.adult.survival, na.rm = TRUE),
+                                    quantile(elast.adult.survival, c(.025, .975),na.rm = TRUE))
+  juv.ratio.summary <- c(mean(juv.ratio, na.rm = TRUE),
+                         quantile(juv.ratio, c(.025, .975),na.rm = TRUE))
+  adult.ratio.summary <- c(mean(adult.ratio, na.rm = TRUE),
+                           quantile(adult.ratio, c(.025, .975),na.rm = TRUE))
 
   simulations <- bind_cols(Lambda = lambda.results,
                            R0 = R0.results,
@@ -1406,33 +1492,52 @@ Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, F. = 0, M.est
 #' @param max.AAFC The maximum Age class to be run in the analyses. This does not need to
 #'     be the maximum age for the population and keeping this number reasonable reduces
 #'     run-time.
-#'
+#' @param n_cores The number of cores to be used for parallel processing. It should be 1 core less than the
+#'     maximum number available.
 #' @return A list with two data.frames. The first provides Fcritical values for each age class.
 #'     This is the value of F where the population growth rate is stable (lambda = 1). The
 #'     second dataframe is the mean lambda produced for each combination of AAFC and F
 #' @export
+#' @examples
+#' \donttest{
+#' # load Silky shark data produced by create_data_input()
+#' # Type `?create_data_input()` for details
+#' data("Silky_data")
+#'
+#' # Run function to get conduct an age-at-first-capture (AAFC) analysis using
+#' # Monte Carlo Simulations using for all available natural mortality estimators.
+#' # Set n = at least 1000 for full analysis but use n = 10 for testing given long run times
+#'
+#' Simulate_AAFC(n = 10, Silky_data)
+#' }
 #' @import doParallel foreach iterators parallel doFuture
 #'
 
-Simulate_AAFC<- function(n = 1000, .data, M.estimators = NULL, max.AAFC = 15){
+Simulate_AAFC<- function(n = 1000, .data, M.estimators = NULL, max.AAFC = 15, n_cores = 1){
   pb <- txtProgressBar(title="Demography progress", label="0% done", min=0, max=100, initial=0, style = 3)
 
   AAFC.range <- seq(0,max.AAFC, 1)
   F.range <- seq(0,1,0.01)
 
-  cl <- parallel::makeCluster(parallel::detectCores()-1)
-  registerDoParallel(cl)
-  registerDoFuture()
+  if(n_cores >  parallel::detectCores()-1) {
+    n_cores <- 1
+    message("Not enough cores available. Reseting to 1 core")
+  }
+
+  cl <- parallel::makeCluster(useXDR=FALSE,n_cores)
+
+  doParallel::registerDoParallel(cl)
+  doFuture::registerDoFuture()
   mean.lambda.given.F.at.AAFC <- matrix(ncol = 3,nrow = length(F.range) * length(0:max.AAFC))
   colnames(mean.lambda.given.F.at.AAFC) <- c("AAFC", "F.", "mean.lambda")
   I <- 1:length(F.range)
   for(AAFC in 0:max.AAFC){
     setTxtProgressBar(pb, (AAFC/max.AAFC)*100, label=info)
 
-    results <- suppressWarnings(foreach(F. = F.range, .combine = rbind, .packages = c("popbio","iterators"),
+    results <- suppressWarnings(foreach::foreach(F. = F.range, .combine = rbind, .packages = c("popbio","iterators"),
                                         .inorder = TRUE,
                                         .export = c("Calculate_demography", "AAFC", "data", "M.estimators", "n",ls(envir=globalenv()))) %dopar%{
-                                          foreach(icount(n), .packages = c("iterators","popbio"),.combine = rbind, .inorder = FALSE,
+                                          foreach::foreach(icount(n), .packages = c("iterators","popbio"),.combine = rbind, .inorder = FALSE,
                                                   .export = c("Calculate_demography", ls(envir=globalenv()))) %dopar%{
 
                                                     tryCatch(
@@ -1448,13 +1553,13 @@ Simulate_AAFC<- function(n = 1000, .data, M.estimators = NULL, max.AAFC = 15){
     lambda_results <- results %>%
       filter(lambda < 2) %>% # in case irregular values occur and throw off distributions
       group_by(AAFC, F.) %>%
-      summarise(mean.lambda = mean(lambda, na.rm = TRUE)) %>%
+      summarise(mean.lambda = mean(lambda, na.rm = TRUE),.groups = "drop_last") %>%
       as.data.frame()
 
     mean.lambda.given.F.at.AAFC[I,] <- as.matrix(lambda_results)
     I <- I + length(F.range)
   }
-  suppressWarnings(stopCluster(cl))
+  suppressWarnings(parallel::stopCluster(cl))
   AAFC_F_critical <-  as.data.frame(mean.lambda.given.F.at.AAFC) %>%
     filter( mean.lambda <= 1) %>%
     group_by(AAFC) %>% slice(which.max(mean.lambda)) %>%
@@ -1482,22 +1587,41 @@ Simulate_AAFC<- function(n = 1000, .data, M.estimators = NULL, max.AAFC = 15){
 #' @param min.AALC The last Age class to be run in the analyses. This does not need to
 #'     be the maximum age for the population and keeping this number reasonable reduces
 #'     run-time.
-#'
+#' @param n_cores The number of cores to be used for parallel processing. It should be 1 core less than the
+#'     maximum number available.
 #' @return A list with two data.frames. The first provides Fcritical values for each age class.
 #'     This is the value of F where the population growth rate is stable (lambda = 1). The
 #'     second dataframe is the mean lambda produced for each combination of AALC and F
 #' @export
+#' @examples
+#' \donttest{
+#' # load Silky shark data produced by create_data_input()
+#' # Type `?create_data_input()` for details
+#' data("Silky_data")
+#'
+#' # Run function to get conduct an age-at-last-capture (AALC) analysis using
+#' # Monte Carlo Simulations using for all available natural mortality estimators.
+#' # Set n = at least 1000 for full analysis but use n = 10 for testing given long run times
+#'
+#' Simulate_AALC(n = 10, Silky_data)
+#' }
 #' @import doParallel foreach iterators parallel doFuture
 #'
-Simulate_AALC <- function(n = 1000, data, M.estimators = NULL,  min.AALC = 15){
+Simulate_AALC <- function(n = 1000, data, M.estimators = NULL,  min.AALC = 15, n_cores = 1){
   pb <- txtProgressBar(title="Demography progress", label="0% done", min=0, max=100, initial=0, style = 3)
 
   AALC.range <- seq(0,min.AALC, 1)
   F.range <- seq(0,1,0.01)
 
-  cl <- makePSOCKcluster(3)
-  registerDoParallel(cl)
-  registerDoFuture()
+  if(n_cores >  parallel::detectCores()-1) {
+    n_cores <- 1
+    message("Not enough cores available. Reseting to 1 core")
+  }
+
+  cl <- parallel::makeCluster(useXDR=FALSE,n_cores)
+  doParallel::registerDoParallel(cl)
+  doFuture::registerDoFuture()
+
   mean.lambda.given.F.at.AALC <- matrix(ncol = 3,nrow = length(F.range) * length(0:min.AALC))
   colnames(mean.lambda.given.F.at.AALC) <- c("AALC", "F.", "mean.lambda")
   I <- 1:length(F.range)
@@ -1506,10 +1630,10 @@ Simulate_AALC <- function(n = 1000, data, M.estimators = NULL,  min.AALC = 15){
 
 
     results <- suppressWarnings(
-      foreach(F. = F.range, .combine = rbind, .packages = c("popbio","iterators"),
+      foreach::foreach(F. = F.range, .combine = rbind, .packages = c("popbio","iterators"),
               .inorder = TRUE,
               .export = c("Calculate_demography", "AALC", "data", "M.estimators", "n",ls(envir=globalenv()))) %dopar%{
-                foreach(icount(n), .packages = c("iterators","popbio"),.combine = rbind, .inorder = FALSE,
+                foreach::foreach(icount(n), .packages = c("iterators","popbio"),.combine = rbind, .inorder = FALSE,
                         .export = c("Calculate_demography", "AALC", "data", "M.estimators", "n",ls(envir=globalenv()))) %dopar%{
                           tryCatch(
                             data.frame(AALC = AALC, F. = F. ,
@@ -1523,14 +1647,14 @@ Simulate_AALC <- function(n = 1000, data, M.estimators = NULL,  min.AALC = 15){
     lambda_results <- results %>%
       filter(lambda < 2) %>% # in case irregular values occur and throw off distributions
       group_by(AALC, F.) %>%
-      summarise(mean.lambda = mean(lambda, na.rm = TRUE)) %>%
+      summarise(mean.lambda = mean(lambda, na.rm = TRUE),.groups = "drop_last") %>%
       as.data.frame()
 
     mean.lambda.given.F.at.AALC[I,] <- as.matrix(lambda_results)
     I <- I + length(F.range)
 
   }
-  suppressWarnings(stopCluster(cl))
+  suppressWarnings(parallel::stopCluster(cl))
 
 
   AALC_F_critical <-  as.data.frame(mean.lambda.given.F.at.AALC) %>%
@@ -1563,26 +1687,42 @@ Simulate_AALC <- function(n = 1000, data, M.estimators = NULL,  min.AALC = 15){
 #'     "Then_hoenig","Then_pauly", "Jensen.mat","Charnov" or "Chen.Want". If none are specified
 #'     then all applicable estimators could be chosen.
 #' @param max.F The maximum value of F for simulations
-#'
+#' @param n_cores The number of cores to be used for parallel processing. It should be 1 core less than the
+#'     maximum number available.
 #' @return A list with two data.frames. The first provides the mean F critical with 95\%
 #'     confidence intervals. The second dataframe provides the rate of increase for each
 #'     increment of F.
 #' @export
+#' @examples
+#' # load Silky shark data produced by create_data_input()
+#' # Type `?create_data_input()` for details
+#' data("Silky_data")
+#'
+#' # Run function to get conduct an F critical analysis using
+#' # Monte Carlo Simulations using for all available natural mortality estimators.
+#' # Set n = at least 1000 for full analysis but use n = 10 for testing given long run times
+#'
+#' Simulate_F_critical(n = 10, Silky_data)
 #' @import doParallel foreach iterators parallel doFuture
 
-Simulate_F_critical <- function(n = 1000, .data, M.estimators = NULL, max.F = 0.3){
+Simulate_F_critical <- function(n = 1000, .data, M.estimators = NULL, max.F = 0.3, n_cores = 1){
 
   F.range <- seq(0,max.F,0.01)
 
-  cl <- makeCluster(useXDR=FALSE,parallel::detectCores()-1)
-  registerDoParallel(cl)
-  registerDoFuture()
+  if(n_cores >  parallel::detectCores()-1) {
+    n_cores <- 1
+    message("Not enough cores available. Reseting to 1 core")
+  }
 
-  results <- suppressWarnings(foreach(F. = F.range, .combine = rbind, .packages = c("popbio","iterators"),
+  cl <- parallel::makeCluster(useXDR=FALSE,n_cores)
+  doParallel::registerDoParallel(cl)
+  doFuture::registerDoFuture()
+
+  results <- suppressWarnings(foreach::foreach(F. = F.range, .combine = rbind, .packages = c("popbio","iterators"),
                                       .inorder = TRUE,
                                       .export = c("Calculate_demography", "AAFC", "data", "M.estimators", "n",ls(envir=globalenv()))) %dopar%{
 
-                                        foreach(icount(n), .packages = c("iterators","popbio"),.combine = rbind, .inorder = FALSE,
+                                        foreach::foreach(icount(n), .packages = c("iterators","popbio"),.combine = rbind, .inorder = FALSE,
                                                 .export = c("Calculate_demography", ls(envir=globalenv()))) %dopar%{
                                                   data.frame(F. = F. ,
                                                              lambda = Calculate_demography(data = .data, AALC = NULL, AAFC = 0,
@@ -1590,10 +1730,10 @@ Simulate_F_critical <- function(n = 1000, .data, M.estimators = NULL, max.F = 0.
                                                 }})
 
 
-  suppressWarnings(stopCluster(cl))
+  suppressWarnings(parallel::stopCluster(cl))
 
   lambda_results <- group_by(results, F.) %>% summarise(AVG = mean(lambda, na.rm = TRUE), lwr = quantile(lambda,.025, na.rm = TRUE),
-                                                        upr = quantile(lambda,.975, na.rm = TRUE)) %>%
+                                                        upr = quantile(lambda,.975, na.rm = TRUE),.groups = "drop_last") %>%
     as.data.frame()
 
 
@@ -1601,7 +1741,7 @@ Simulate_F_critical <- function(n = 1000, .data, M.estimators = NULL, max.F = 0.
     summarise(F. = .[which(.$AVG == min(.$AVG)),"F."],
               AVG = .[which(.$AVG == min(.$AVG)),"AVG"],
               lwr = .[which(.$AVG == min(.$AVG)),"lwr"],
-              upr = .[which(.$AVG == min(.$AVG)),"upr"])
+              upr = .[which(.$AVG == min(.$AVG)),"upr"],.groups = "drop_last")
 
   return(list(F_critical = F_critical, Simulations = lambda_results))
 
@@ -1624,25 +1764,39 @@ Simulate_F_critical <- function(n = 1000, .data, M.estimators = NULL, max.F = 0.
 #' @param Age.mid.point A vector of ages to be used in the simulation. Each age is used as
 #'     a mid point and will have HS.Width subtracted and added to it to determine AAFC and AALC,
 #'     respectively.
-#' @param HS.width A vector of widths for the Harvest slots. Widths are subtracted and added to mid points to determine
+#' @param HS.width A vector of widths for the Harvest slots in years. Widths are subtracted and added to mid points to determine
 #'     the AAFC and AALC in each sim.
 #' @param max.F The maximum value of F for simulations
 #'
 #' @return A data.frame with three columns: MinAge, MaxAge and 'F.'. These represent the age at the
 #'     start of a harvest slot, the age at the end of the harvest slot and the F for that harvest slot.
 #' @export
+#' @examples
+#' \donttest{
+#' # load Silky shark data produced by create_data_input()
+#' # Type `?create_data_input()` for details
+#' data("Silky_data")
+#'
+#' # Run function to get conduct an F critical analysis for different harvest slots using
+#' # Monte Carlo Simulations using for all available natural mortality estimators.
+#' # Set n = at least 1000 for full analysis but use n = 10 for testing given long run times
+#'
+#' Simulate_harvest_slots(n = 10, Silky_data,Age.mid.point = 0:28, HS.width = 0:8)
+#' }
 #' @import interp
 
-Simulate_harvest_slots <- function(n, data,  M.estimators = NULL, Age.mid.point, HS.width, max.F){
-
+Simulate_harvest_slots <- function(n, data,  M.estimators = NULL,
+                                   Age.mid.point = NULL, HS.width = NULL, max.F = 1){
+  if(is.null(Age.mid.point)) stop("Age.mid.point must be a range")
   if(length(Age.mid.point)==1) stop("Age.mid.point must be a range")
+  if(is.null(HS.width)) stop("Age.mid.point must be a range")
   if(length(HS.width)==1) stop("HS.width must be a range")
   if(length(max.F)!=1) stop("max.F must be a single value")
 
   Results <- expand.grid(Age.mid.point = Age.mid.point, HS.width = HS.width, F. = seq(0,max.F,.05),
                          Lambda = NA,  low = NA, upp = NA)
 
-  max.age <- max(Age.mid.point,na.rm = T)
+  max.age <- max(Age.mid.point,na.rm = TRUE)
 
   pb <- txtProgressBar(title="Havest Slot sim progress", label="0% done", min=0, max=100, initial=0, style = 3)
   for(Mid in unique(Results$Age.mid.point)){
