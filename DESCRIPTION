@@ -11,7 +11,7 @@ Description: Run Leslie Matrix models using Monte Carlo simulations for any spec
     This package was developed during the publication of Smart, JJ, White, WT, Baje, L, et al. (2020)
     "Can multi-species shark longline fisheries be managed sustainably using size limits? 
     Theoretically, yes. Realistically, no".J Appl Ecol. 2020; 57; 1847–1860. 
-    <https://doi.org/10.1111/1365-2664.13659>.
+    <doi:10.1111/1365-2664.13659>.
 Encoding: UTF-8
 LazyData: true
 Depends: R (>= 3.3)
@@ -33,6 +33,5 @@ License: GPL (>= 3)
 Suggests: 
     knitr,
     rmarkdown
-VignetteBuilder: knitr
 URL: https://github.com/jonathansmart/SharkDemography
 BugReports: https://github.com/jonathansmart/SharkDemography/issues
