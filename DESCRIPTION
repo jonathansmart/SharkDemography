@@ -32,9 +32,8 @@ RoxygenNote: 7.2.3
 License: GPL (>= 3)
 Suggests: 
     knitr,
-    rmarkdown,
-    testthat (>= 3.0.0)
+    rmarkdown
 VignetteBuilder: knitr
 URL: https://github.com/jonathansmart/SharkDemography
 BugReports: https://github.com/jonathansmart/SharkDemography/issues
-Config/testthat/edition: 3
+
