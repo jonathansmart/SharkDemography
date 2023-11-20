@@ -49,5 +49,5 @@ data("Silky_data")
 # Monte Carlo Simulations using for all available natural mortality estimators.
 # Set n = at least 1000 for full analysis but use n = 10 for testing given long run times
 
-Simulate_F_critical(n = 10, Silky_data)
+Simulate_F_critical(n = 10, Silky_data, n_cores = 1)
 }
