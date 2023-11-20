@@ -1,7 +1,9 @@
 ## Resubmission
 
-* number of cores set explicitly to 1 for all examples
+* number of cores set explicitly to 1 for all examples.
 
+* \donttest{} is used for several function examples as these
+  functions run Monte Carlo Simulations and have unavoidably long run times.
 
 ## R CMD check results
 
