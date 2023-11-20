@@ -1508,7 +1508,7 @@ Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, F. = 0, M.est
 #' # Monte Carlo Simulations using for all available natural mortality estimators.
 #' # Set n = at least 1000 for full analysis but use n = 10 for testing given long run times
 #'
-#' Simulate_AAFC(n = 10, Silky_data)
+#' Simulate_AAFC(n = 10, Silky_data, n_cores = 1)
 #' }
 #' @import doParallel foreach iterators parallel doFuture
 #'
@@ -1603,7 +1603,7 @@ Simulate_AAFC<- function(n = 1000, .data, M.estimators = NULL, max.AAFC = 15, n_
 #' # Monte Carlo Simulations using for all available natural mortality estimators.
 #' # Set n = at least 1000 for full analysis but use n = 10 for testing given long run times
 #'
-#' Simulate_AALC(n = 10, Silky_data)
+#' Simulate_AALC(n = 10, Silky_data, n_cores = 1)
 #' }
 #' @import doParallel foreach iterators parallel doFuture
 #'
@@ -1702,7 +1702,7 @@ Simulate_AALC <- function(n = 1000, data, M.estimators = NULL,  min.AALC = 15, n
 #' # Monte Carlo Simulations using for all available natural mortality estimators.
 #' # Set n = at least 1000 for full analysis but use n = 10 for testing given long run times
 #'
-#' Simulate_F_critical(n = 10, Silky_data)
+#' Simulate_F_critical(n = 10, Silky_data, n_cores = 1)
 #' @import doParallel foreach iterators parallel doFuture
 
 Simulate_F_critical <- function(n = 1000, .data, M.estimators = NULL, max.F = 0.3, n_cores = 1){
