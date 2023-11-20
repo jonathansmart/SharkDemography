@@ -1,6 +1,6 @@
 Package: SharkDemography
 Type: Package
-Title: Shark Demographic Analyses using Leslie Matrix Models
+Title: Shark Demographic Analyses Using Leslie Matrix Models
 Version: 1.1.0
 Authors@R: person("Jonathan", "Smart", 
     email = "jonsmartphd@gmail.com", 
