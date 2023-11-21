@@ -18,6 +18,7 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3777741.svg)](https://doi.org/10.5281/zenodo.3777741)
 [![R-CMD-check](https://github.com/jonathansmart/SharkDemography/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/jonathansmart/SharkDemography/actions/workflows/R-CMD-check.yaml)
+[![CRAN status](https://www.r-pkg.org/badges/version/SharkDemography)](https://CRAN.R-project.org/package=SharkDemography)
 <!-- badges: end -->
 
 SharkDemography is a package that will run Leslie Matrix models using Monte Carlo simulations for any specified shark species. This package was developed during the publication of:
@@ -31,9 +32,16 @@ This code will demonstrate how to run the package and reproduce the results of S
 
 ## Installation
 
+You can install the released version of `SharkDemography` from CRAN with:
+
+```{r, eval = FALSE}
+install.packages("SharkDemography")
+```
+
+
 You can install the development version of SharkDemography from [GitHub](https://github.com/) with:
 
-``` r
+```{r, eval = FALSE}
 # install.packages("devtools")
 devtools::install_github("jonathansmart/SharkDemography")
 ```

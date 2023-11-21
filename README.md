@@ -7,6 +7,8 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3777741.svg)](https://doi.org/10.5281/zenodo.3777741)
 [![R-CMD-check](https://github.com/jonathansmart/SharkDemography/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/jonathansmart/SharkDemography/actions/workflows/R-CMD-check.yaml)
+[![CRAN
+status](https://www.r-pkg.org/badges/version/SharkDemography)](https://CRAN.R-project.org/package=SharkDemography)
 <!-- badges: end -->
 
 SharkDemography is a package that will run Leslie Matrix models using
@@ -27,6 +29,13 @@ results of Smart et al (2020). A forthcoming vignette will eventually be
 written based on a simplified version of these analyses.
 
 ## Installation
+
+You can install the released version of `SharkDemography` from CRAN
+with:
+
+``` r
+install.packages("SharkDemography")
+```
 
 You can install the development version of SharkDemography from
 [GitHub](https://github.com/) with:
