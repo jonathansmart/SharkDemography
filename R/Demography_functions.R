@@ -100,12 +100,12 @@ create_data_input <- function(maturity.type, t0 = FALSE){
 
   data_list[["Mortality"]] <- list(mean = NA, se = NA)
 
-  data_list[["Lt.type"]] <- "TL"
-  data_list[["Lt.to.Wt"]] <- list(model.type = NA,
-                                  pars = list(a = NA, b = NA))
-
-  data_list[["convert.TL"]] <- list(model.type = NA,
-                                    pars = list(a = NA, b = NA))
+  # data_list[["Lt.type"]] <- "TL"
+  # data_list[["Lt.to.Wt"]] <- list(model.type = NA,
+  #                                 pars = list(a = NA, b = NA))
+  #
+  # data_list[["convert.TL"]] <- list(model.type = NA,
+  #                                   pars = list(a = NA, b = NA))
 
   data_list[["litter.size"]] <- list(mean = NA, se = NA)
   data_list[["gest.period"]] <- NA
@@ -146,7 +146,7 @@ create_data_input <- function(maturity.type, t0 = FALSE){
 #' @param M.estimators Any specific natural mortality estimators to be included in the analysis.
 #'     Only one will be used in each run which is randomly selected. In the simulation functions
 #'     these will be varied among simulations. Must be a single estimator or a vector of estimators.
-#'     These can include: "Pet.Wro","Jensen.mat","Chen.Yuan","Then_hoenig","Then_pauly", "
+#'     These can include: "Jensen.mat","Chen.Yuan","Then_hoenig","Then_pauly", "
 #'     Jensen.mat","Charnov" or "Chen.Want". If none are specified then all applicable estimators
 #'     could be chosen.
 #'
@@ -184,11 +184,18 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, M.estim
   if(!data$growth$model.type %in%  c("Von Bertalanffy", "logistic", "Gompertz"))
     stop("Growth model type not correctly specified")
 
-  possible_estimators <- c("Pet.Wro","Jensen.mat","Chen.Yuan","Then_hoenig","Then_pauly", "Jensen","Charnov","Chen.Want")
+  if("Pet.Wro" %in% M.estimators) stop("Peterson and Wrobleski (1984) method has been deprecated since version 1.1.0. as it was easy to miss specify.\n Please remove this from the 'M.estimators' argument")
+
+
+  possible_estimators <- c(
+    # "Pet.Wro",
+    "Jensen.mat","Chen.Yuan","Then_hoenig","Then_pauly", "Jensen","Charnov","Chen.Want")
   if(any(!M.estimators %in% possible_estimators)) stop("One or more M estimators are not correctly specified")
   if(is.null(M.estimators)){
     M.estimators <- possible_estimators
   }
+
+
 
   # remove all mortality estimates that require VB params if VB is not being used
   if(data$growth$model.type != "Von Bertalanffy") M.estimators <- M.estimators[which(!M.estimators %in% c("Chen.Want", "Charnov", "Jensen", "Then_pauly"))]
@@ -378,32 +385,32 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, M.estim
   } else {
     M.table <- matrix(nrow = length(Age), ncol = length(M.estimators))
     colnames(M.table)<-c(M.estimators)
-    if("Pet.Wro" %in% M.estimators){
-
-      # If the length weight model type is the same as the length type then no conversion
-      # is needed
-      if(data$Lt.to.Wt$model.type == data$Lt.type){
-        Length.for.wt.conv <- Lt
-      } else{
-
-        # Otherwise perform, conversion as necessary. Currently, this converts TL to
-        # PCL or FL only. If PCL or FL is used for length in the growth model then typically
-        # They are also used in the length weight relationship and don't need converting.
-        if(data$convert.TL$model.type == "PCL" & data$Lt.to.Wt$model.type == "PCL"){
-          Length.for.wt.conv<-(Lt-data$convert.TL$pars$a)/data$convert.TL$pars$b
-        } else if(data$convert.TL$model.type == "FL" & data$Lt.to.Wt$model.type == "FL"){
-          Length.for.wt.conv<-(Lt*data$convert.TL$pars$a)-data$convert.TL$pars$b
-        } else if(data$Lt.to.Wt$model.type == "TL"){
-          Length.for.wt.conv <- Lt
-        } else {
-          Length.for.wt.conv <- NA # correct length cannot be calculated so return NA to nullify this method
-        }
-      }
-      Wt <- (data$Lt.to.Wt$pars$a)*Length.for.wt.conv^data$Lt.to.Wt$pars$b
-
-      M.table[,"Pet.Wro"]<-((Wt^-0.25)*1.92)*0.2
-
-    }
+    # if("Pet.Wro" %in% M.estimators){
+    #
+    #   # If the length weight model type is the same as the length type then no conversion
+    #   # is needed
+    #   if(data$Lt.to.Wt$model.type == data$Lt.type){
+    #     Length.for.wt.conv <- Lt
+    #   } else{
+    #
+    #     # Otherwise perform, conversion as necessary. Currently, this converts TL to
+    #     # PCL or FL only. If PCL or FL is used for length in the growth model then typically
+    #     # They are also used in the length weight relationship and don't need converting.
+    #     if(data$convert.TL$model.type == "PCL" & data$Lt.to.Wt$model.type == "PCL"){
+    #       Length.for.wt.conv<-(Lt-data$convert.TL$pars$a)/data$convert.TL$pars$b
+    #     } else if(data$convert.TL$model.type == "FL" & data$Lt.to.Wt$model.type == "FL"){
+    #       Length.for.wt.conv<-(Lt*data$convert.TL$pars$a)-data$convert.TL$pars$b
+    #     } else if(data$Lt.to.Wt$model.type == "TL"){
+    #       Length.for.wt.conv <- Lt
+    #     } else {
+    #       Length.for.wt.conv <- NA # correct length cannot be calculated so return NA to nullify this method
+    #     }
+    #   }
+    #   Wt <- (data$Lt.to.Wt$pars$a)*Length.for.wt.conv^data$Lt.to.Wt$pars$b
+    #
+    #   M.table[,"Pet.Wro"]<-((Wt^-0.25)*1.92)*0.2
+    #
+    # }
     if("Jensen.mat" %in% M.estimators){
       M.table[,"Jensen.mat"] <- 1.65/age_at_maturity}
     if("Chen.Yuan" %in% M.estimators){
@@ -652,7 +659,7 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, M.estim
 #' @param data A multi-level list of the class `Demography.inputs` produced from the
 #'     `create_data_input` function and then manually completed.
 #' @param M.estimators Any specific natural mortality estimators to be included in the analysis.
-#'      Must be a single estimator or a vector of estimators. These can include: "Pet.Wro",
+#'      Must be a single estimator or a vector of estimators. These can include:
 #'     "Jensen.mat","Chen.Yuan","Then_hoenig","Then_pauly", "Jensen.mat","Charnov" or
 #'     "Chen.Want". If none are specified then all applicable estimators could be chosen.
 #'
@@ -678,11 +685,17 @@ Estimate_eigenvectors <- function(n = 1000, data, M.estimators = NULL){
   if(!data$growth$model.type %in%  c("Von Bertalanffy", "logistic", "Gompertz"))
     stop("Growth model type not correctly specified")
 
-  possible_estimators <- c("Pet.Wro","Jensen.mat","Chen.Yuan","Then_hoenig","Then_pauly", "Jensen","Charnov","Chen.Want")
+  if("Pet.Wro" %in% M.estimators) stop("Peterson and Wrobleski (1984) method has been deprecated since version 1.1.0. as it was easy to miss specify.\n Please remove this from the 'M.estimators' argument")
+
+
+  possible_estimators <- c(
+    # "Pet.Wro",
+    "Jensen.mat","Chen.Yuan","Then_hoenig","Then_pauly", "Jensen","Charnov","Chen.Want")
   if(any(!M.estimators %in% possible_estimators)) stop("One or more M estimators are not correctly specified")
   if(is.null(M.estimators)){
     M.estimators <- possible_estimators
   }
+
 
   # remove all mortality estimates that require VB params if VB is not being used
   if(data$growth$model.type != "Von Bertalanffy") M.estimators <- M.estimators[which(!M.estimators %in% c("Chen.Want", "Charnov", "Jensen", "Then_pauly"))]
@@ -853,32 +866,32 @@ Estimate_eigenvectors <- function(n = 1000, data, M.estimators = NULL){
     } else {
       M.table <- matrix(nrow = length(Age), ncol = length(M.estimators))
       colnames(M.table)<-c(M.estimators)
-      if("Pet.Wro" %in% M.estimators){
-
-        # If the length weight model type is the same as the length type then no conversion
-        # is needed
-        if(data$Lt.to.Wt$model.type == data$Lt.type){
-          Length.for.wt.conv <- Lt
-        } else{
-
-          # Otherwise perform, conversion as necessary. Currently, this converts TL to
-          # PCL or FL only. If PCL or FL is used for length in the growth model then typically
-          # They are also used in the length weight relationship and don't need converting.
-          if(data$convert.TL$model.type == "PCL" & data$Lt.to.Wt$model.type == "PCL"){
-            Length.for.wt.conv<-(Lt-data$convert.TL$pars$a)/data$convert.TL$pars$b
-          } else if(data$convert.TL$model.type == "FL" & data$Lt.to.Wt$model.type == "FL"){
-            Length.for.wt.conv<-(Lt*data$convert.TL$pars$a)-data$convert.TL$pars$b
-          } else if(data$Lt.to.Wt$model.type == "TL"){
-            Length.for.wt.conv <- Lt
-          } else {
-            Length.for.wt.conv <- NA # correct length cannot be calculated so return NA to nullify this method
-          }
-        }
-        Wt <- (data$Lt.to.Wt$pars$a)*Length.for.wt.conv^data$Lt.to.Wt$pars$b
-
-        M.table[,"Pet.Wro"]<-((Wt^-0.25)*1.92)*0.2
-
-      }
+      # if("Pet.Wro" %in% M.estimators){
+      #
+      #   # If the length weight model type is the same as the length type then no conversion
+      #   # is needed
+      #   if(data$Lt.to.Wt$model.type == data$Lt.type){
+      #     Length.for.wt.conv <- Lt
+      #   } else{
+      #
+      #     # Otherwise perform, conversion as necessary. Currently, this converts TL to
+      #     # PCL or FL only. If PCL or FL is used for length in the growth model then typically
+      #     # They are also used in the length weight relationship and don't need converting.
+      #     if(data$convert.TL$model.type == "PCL" & data$Lt.to.Wt$model.type == "PCL"){
+      #       Length.for.wt.conv<-(Lt-data$convert.TL$pars$a)/data$convert.TL$pars$b
+      #     } else if(data$convert.TL$model.type == "FL" & data$Lt.to.Wt$model.type == "FL"){
+      #       Length.for.wt.conv<-(Lt*data$convert.TL$pars$a)-data$convert.TL$pars$b
+      #     } else if(data$Lt.to.Wt$model.type == "TL"){
+      #       Length.for.wt.conv <- Lt
+      #     } else {
+      #       Length.for.wt.conv <- NA # correct length cannot be calculated so return NA to nullify this method
+      #     }
+      #   }
+      #   Wt <- (data$Lt.to.Wt$pars$a)*Length.for.wt.conv^data$Lt.to.Wt$pars$b
+      #
+      #   M.table[,"Pet.Wro"]<-((Wt^-0.25)*1.92)*0.2
+      #
+      # }
       if("Jensen.mat" %in% M.estimators){
         M.table[,"Jensen.mat"] <- 1.65/age_at_maturity}
       if("Chen.Yuan" %in% M.estimators){
@@ -1005,7 +1018,7 @@ Estimate_eigenvectors <- function(n = 1000, data, M.estimators = NULL){
 #' @param data A multi-level list of the class `Demography.inputs` produced from the
 #'     `create_data_input` function and then manually completed.
 #' @param M.estimators Any specific natural mortality estimators to be included in the analysis.
-#'      Must be a single estimator or a vector of estimators. These can include: "Pet.Wro",
+#'      Must be a single estimator or a vector of estimators. These can include:
 #'     "Jensen.mat","Chen.Yuan","Then_hoenig","Then_pauly", "Jensen.mat","Charnov" or
 #'     "Chen.Want". If none are specified then all applicable estimators could be chosen.
 #'
@@ -1034,11 +1047,18 @@ Estimate_mortality_dists <- function(n = 1000, data, M.estimators = NULL){
   if(!data$growth$model.type %in%  c("Von Bertalanffy", "logistic", "Gompertz"))
     stop("Growth model type not correctly specified")
 
-  possible_estimators <- c("Pet.Wro","Jensen.mat","Chen.Yuan","Then_hoenig","Then_pauly", "Jensen","Charnov","Chen.Want")
+  if("Pet.Wro" %in% M.estimators) stop("Peterson and Wrobleski (1984) method has been deprecated since version 1.1.0. as it was easy to miss specify.\n Please remove this from the 'M.estimators' argument")
+
+
+  possible_estimators <- c(
+    # "Pet.Wro",
+    "Jensen.mat","Chen.Yuan","Then_hoenig","Then_pauly", "Jensen","Charnov","Chen.Want")
   if(any(!M.estimators %in% possible_estimators)) stop("One or more M estimators are not correctly specified")
   if(is.null(M.estimators)){
     M.estimators <- possible_estimators
   }
+
+
 
   # remove all mortality estimates that require VB params if VB is not being used
   if(data$growth$model.type != "Von Bertalanffy") M.estimators <- M.estimators[which(!M.estimators %in% c("Chen.Want", "Charnov", "Jensen", "Then_pauly"))]
@@ -1203,32 +1223,32 @@ Estimate_mortality_dists <- function(n = 1000, data, M.estimators = NULL){
 
 
     ### Mortality calculations -------------------
-    if("Pet.Wro" %in% M.estimators){
-
-      # If the length weight model type is the same as the length type then no conversion
-      # is needed
-      if(data$Lt.to.Wt$model.type == data$Lt.type){
-        Length.for.wt.conv <- Lt
-      } else{
-
-        # Otherwise perform, conversion as necessary. Currently, this converts TL to
-        # PCL or FL only. If PCL or FL is used for length in the growth model then typically
-        # They are also used in the length weight relationship and don't need converting.
-        if(data$convert.TL$model.type == "PCL" & data$Lt.to.Wt$model.type == "PCL"){
-          Length.for.wt.conv<-(Lt-data$convert.TL$pars$a)/data$convert.TL$pars$b
-        } else if(data$convert.TL$model.type == "FL" & data$Lt.to.Wt$model.type == "FL"){
-          Length.for.wt.conv<-(Lt*data$convert.TL$pars$a)-data$convert.TL$pars$b
-        } else if(data$Lt.to.Wt$model.type == "TL"){
-          Length.for.wt.conv <- Lt
-        } else {
-          Length.for.wt.conv <- NA # correct length cannot be calculated so return NA to nullify this method
-        }
-      }
-      Wt <- (data$Lt.to.Wt$pars$a)*Length.for.wt.conv^data$Lt.to.Wt$pars$b
-
-      P_W_table[1:(max.age+1),i]<-((Wt^-0.25)*1.92)*0.2
-
-    }
+    # if("Pet.Wro" %in% M.estimators){
+    #
+    #   # If the length weight model type is the same as the length type then no conversion
+    #   # is needed
+    #   if(data$Lt.to.Wt$model.type == data$Lt.type){
+    #     Length.for.wt.conv <- Lt
+    #   } else{
+    #
+    #     # Otherwise perform, conversion as necessary. Currently, this converts TL to
+    #     # PCL or FL only. If PCL or FL is used for length in the growth model then typically
+    #     # They are also used in the length weight relationship and don't need converting.
+    #     if(data$convert.TL$model.type == "PCL" & data$Lt.to.Wt$model.type == "PCL"){
+    #       Length.for.wt.conv<-(Lt-data$convert.TL$pars$a)/data$convert.TL$pars$b
+    #     } else if(data$convert.TL$model.type == "FL" & data$Lt.to.Wt$model.type == "FL"){
+    #       Length.for.wt.conv<-(Lt*data$convert.TL$pars$a)-data$convert.TL$pars$b
+    #     } else if(data$Lt.to.Wt$model.type == "TL"){
+    #       Length.for.wt.conv <- Lt
+    #     } else {
+    #       Length.for.wt.conv <- NA # correct length cannot be calculated so return NA to nullify this method
+    #     }
+    #   }
+    #   Wt <- (data$Lt.to.Wt$pars$a)*Length.for.wt.conv^data$Lt.to.Wt$pars$b
+    #
+    #   P_W_table[1:(max.age+1),i]<-((Wt^-0.25)*1.92)*0.2
+    #
+    # }
 
     if("Jensen.mat" %in% M.estimators){
       M.table[i,"Jensen.mat"] <- 1.65/age_at_maturity}
@@ -1337,7 +1357,7 @@ Estimate_mortality_dists <- function(n = 1000, data, M.estimators = NULL){
 #'     age which can include zero.
 #' @param M.estimators Any specific natural mortality estimators to be included in the analysis.
 #'     Only one will be used in each run which is randomly selected. Must be a single estimator
-#'     or a vector of estimators. These can include: "Pet.Wro","Jensen.mat","Chen.Yuan",
+#'     or a vector of estimators. These can include: "Jensen.mat","Chen.Yuan",
 #'     "Then_hoenig","Then_pauly", "Jensen.mat","Charnov" or "Chen.Want". If none are specified
 #'     then all applicable estimators could be chosen.
 #' @param Verbatim Print summary results to screen if TRUE. When FALSE, the progress bar is also disabled.
@@ -1486,7 +1506,7 @@ Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, F. = 0, M.est
 #'     `create_data_input` function and then manually completed.
 #' @param M.estimators Any specific natural mortality estimators to be included in the analysis.
 #'     Only one will be used in each run which is randomly selected. Must be a single estimator
-#'     or a vector of estimators. These can include: "Pet.Wro","Jensen.mat","Chen.Yuan",
+#'     or a vector of estimators. These can include: "Jensen.mat","Chen.Yuan",
 #'     "Then_hoenig","Then_pauly", "Jensen.mat","Charnov" or "Chen.Want". If none are specified
 #'     then all applicable estimators could be chosen.
 #' @param max.AAFC The maximum Age class to be run in the analyses. This does not need to
@@ -1581,7 +1601,7 @@ Simulate_AAFC<- function(n = 1000, .data, M.estimators = NULL, max.AAFC = 15, n_
 #'     `create_data_input` function and then manually completed.
 #' @param M.estimators Any specific natural mortality estimators to be included in the analysis.
 #'     Only one will be used in each run which is randomly selected. Must be a single estimator
-#'     or a vector of estimators. These can include: "Pet.Wro","Jensen.mat","Chen.Yuan",
+#'     or a vector of estimators. These can include: "Jensen.mat","Chen.Yuan",
 #'     "Then_hoenig","Then_pauly", "Jensen.mat","Charnov" or "Chen.Want". If none are specified
 #'     then all applicable estimators could be chosen.
 #' @param min.AALC The last Age class to be run in the analyses. This does not need to
@@ -1683,7 +1703,7 @@ Simulate_AALC <- function(n = 1000, data, M.estimators = NULL,  min.AALC = 15, n
 #'     `create_data_input` function and then manually completed.
 #' @param M.estimators Any specific natural mortality estimators to be included in the analysis.
 #'     Only one will be used in each run which is randomly selected. Must be a single estimator
-#'     or a vector of estimators. These can include: "Pet.Wro","Jensen.mat","Chen.Yuan",
+#'     or a vector of estimators. These can include: "Jensen.mat","Chen.Yuan",
 #'     "Then_hoenig","Then_pauly", "Jensen.mat","Charnov" or "Chen.Want". If none are specified
 #'     then all applicable estimators could be chosen.
 #' @param max.F The maximum value of F for simulations
@@ -1758,7 +1778,7 @@ Simulate_F_critical <- function(n = 1000, .data, M.estimators = NULL, max.F = 0.
 #'     `create_data_input` function and then manually completed.
 #' @param M.estimators Any specific natural mortality estimators to be included in the analysis.
 #'     Only one will be used in each run which is randomly selected. Must be a single estimator
-#'     or a vector of estimators. These can include: "Pet.Wro","Jensen.mat","Chen.Yuan",
+#'     or a vector of estimators. These can include: "Jensen.mat","Chen.Yuan",
 #'     "Then_hoenig","Then_pauly", "Jensen.mat","Charnov" or "Chen.Want". If none are specified
 #'     then all applicable estimators could be chosen.
 #' @param Age.mid.point A vector of ages to be used in the simulation. Each age is used as
