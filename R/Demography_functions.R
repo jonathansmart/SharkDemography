@@ -186,19 +186,30 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, M.estim
 
   if("Pet.Wro" %in% M.estimators) stop("Peterson and Wrobleski (1984) method has been deprecated since version 1.1.0. as it was easy to miss specify.\n Please remove this from the 'M.estimators' argument")
 
+  if(!is.null(M.estimators)){
+    M.estimators <- dplyr::replace_values(
+      M.estimators,
+      "Jensen.mat" ~ "Jensen_mat",
+      "Chen.Yuan" ~ "Chen_Yuan",
+      "Then_hoenig" ~ "Then_nls",
+      "Then_pauly" ~ "Then_VBGF",
+      "Jensen" ~ "Jensen_k1",
+      "Charnov" ~ "Charnov",
+      "Chen.Want" ~ "Chen-Wat",
+      "Then_lm" ~ "Then_lm",
+      "Hamel_Amax" ~ "Hamel_Amax",
+      "Hamel_k" ~ "Hamel_k"
+    )
+  }
 
-  possible_estimators <- c(
-    # "Pet.Wro",
-    "Jensen.mat","Chen.Yuan","Then_hoenig","Then_pauly", "Jensen","Charnov","Chen.Want")
+  possible_estimators <- c("Jensen_mat","Chen_Yuan","Then_nls","Then_VBGF", "Jensen_k1","Charnov","Chen-Wat", "Then_lm", "Hamel_Amax", "Hamel_k")
   if(any(!M.estimators %in% possible_estimators)) stop("One or more M estimators are not correctly specified")
   if(is.null(M.estimators)){
     M.estimators <- possible_estimators
   }
 
-
-
   # remove all mortality estimates that require VB params if VB is not being used
-  if(data$growth$model.type != "Von Bertalanffy") M.estimators <- M.estimators[which(!M.estimators %in% c("Chen.Want", "Charnov", "Jensen", "Then_pauly"))]
+  if(data$growth$model.type != "Von Bertalanffy") M.estimators <- M.estimators[which(!M.estimators %in% c("Chen-Wat", "Charnov", "Jensen_k1", "Then_VBGF", "Hamel_k"))]
   if(length(M.estimators) == 0) stop("Specified mortality estimators could not be applied")
 
   if(is.null(AALC) & is.null(AAFC) & F. > 0){
@@ -385,52 +396,32 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, M.estim
   } else {
     M.table <- matrix(nrow = length(Age), ncol = length(M.estimators))
     colnames(M.table)<-c(M.estimators)
-    # if("Pet.Wro" %in% M.estimators){
-    #
-    #   # If the length weight model type is the same as the length type then no conversion
-    #   # is needed
-    #   if(data$Lt.to.Wt$model.type == data$Lt.type){
-    #     Length.for.wt.conv <- Lt
-    #   } else{
-    #
-    #     # Otherwise perform, conversion as necessary. Currently, this converts TL to
-    #     # PCL or FL only. If PCL or FL is used for length in the growth model then typically
-    #     # They are also used in the length weight relationship and don't need converting.
-    #     if(data$convert.TL$model.type == "PCL" & data$Lt.to.Wt$model.type == "PCL"){
-    #       Length.for.wt.conv<-(Lt-data$convert.TL$pars$a)/data$convert.TL$pars$b
-    #     } else if(data$convert.TL$model.type == "FL" & data$Lt.to.Wt$model.type == "FL"){
-    #       Length.for.wt.conv<-(Lt*data$convert.TL$pars$a)-data$convert.TL$pars$b
-    #     } else if(data$Lt.to.Wt$model.type == "TL"){
-    #       Length.for.wt.conv <- Lt
-    #     } else {
-    #       Length.for.wt.conv <- NA # correct length cannot be calculated so return NA to nullify this method
-    #     }
-    #   }
-    #   Wt <- (data$Lt.to.Wt$pars$a)*Length.for.wt.conv^data$Lt.to.Wt$pars$b
-    #
-    #   M.table[,"Pet.Wro"]<-((Wt^-0.25)*1.92)*0.2
-    #
-    # }
-    if("Jensen.mat" %in% M.estimators){
-      M.table[,"Jensen.mat"] <- 1.65/age_at_maturity}
-    if("Chen.Yuan" %in% M.estimators){
-      M.table[,"Chen.Yuan"] <-exp(1.46-1.01*log(tmax))}
-    if("Then_hoenig" %in% M.estimators){
-      M.table[,"Then_hoenig"] <- 4.899*tmax^-0.916}
-    if("Then_pauly" %in% M.estimators &
+    if("Then_lm" %in% M.estimators){
+      M.table[,"Then_lm"] <- exp(1.717-1.01*log(tmax))}
+    if("Hamel_Amax" %in% M.estimators){
+      M.table[,"Hamel_Amax"] <- 5.4/tmax}
+    if("Hamel_k" %in% M.estimators){
+      M.table[,"Hamel_k"] <- 1.55*k}
+    if("Jensen_mat" %in% M.estimators){
+      M.table[,"Jensen_mat"] <- 1.65/age_at_maturity}
+    if("Chen_Yuan" %in% M.estimators){
+      M.table[,"Chen_Yuan"] <-exp(1.46-1.01*log(tmax))}
+    if("Then_nls" %in% M.estimators){
+      M.table[,"Then_nls"] <- 4.899*tmax^-0.916}
+    if("Then_VBGF" %in% M.estimators &
        data$growth$model.type == "Von Bertalanffy"){
-      Then_pauly <- 4.118*k^0.73*Linf^-0.33
-      M.table <- cbind(M.table, Then_pauly = Then_pauly)
+      Then_VBGF <- 4.118*k^0.73*Linf^-0.33
+      M.table <- cbind(M.table, Then_VBGF = Then_VBGF)
     }
-    if("Jensen" %in% M.estimators&
+    if("Jensen_k1" %in% M.estimators&
        data$growth$model.type == "Von Bertalanffy"){
-      M.table[,"Jensen"] <- 1.5*k
+      M.table[,"Jensen_k1"] <- 1.5*k
     }
     if("Charnov" %in% M.estimators&
        data$growth$model.type == "Von Bertalanffy"){
       M.table[,"Charnov"] <- k*(Lt/Linf)^-1.5
     }
-    if("Chen.Want" %in% M.estimators&
+    if("Chen-Wat" %in% M.estimators&
        data$growth$model.type == "Von Bertalanffy"){
 
       if(!any(names(data$growth$pars) %in% "t0")){
@@ -449,7 +440,7 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, M.estim
         CW <- cbind(CW,cw)
       }
 
-      M.table[,"Chen.Want"] <- as.vector(CW)
+      M.table[,"Chen-Wat"] <- as.vector(CW)
     }
 
     if(ncol(M.table) == 1){
@@ -466,24 +457,6 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, M.estim
   # older than the AAFC or younger than AALC. If both are zero then F is not included.
   # An error (specified earlier) is thrown if both are non-zero
 
-  # if(is.null(AALC) & is.null(AAFC)){
-  #   survivorship <- exp(-(Mortality))
-  # } else if(is.null(AALC) & !is.null(AAFC)){
-  #   survivorship <- exp(-(Mortality))
-  #   for(j in seq_along(Age)){
-  #     if(Age[j]>=AAFC){survivorship[j] <- exp(-(Mortality[j]+F.))}
-  #   }
-  # } else if(!is.null(AALC) & is.null(AAFC)){
-  #   survivorship <- exp(-(Mortality))
-  #   for(j in seq_along(Age)){
-  #     if(Age[j]<=AALC){survivorship[j] <- exp(-(Mortality[j]+F.))}
-  #   }
-  # } else {
-  #   stop("AAFC and AALC cannot be used simulatneously")
-  # }
-
-  # Code update. An AALC and AAFC can now be specified which is used in the Harvest
-  # slot simulation function
 
   if(is.null(AALC) & is.null(AAFC)){
     survivorship <- exp(-(Mortality))
@@ -507,41 +480,8 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, M.estim
   }
 
 
-  # Add a zero at the end of the sx vector to identify that no individuals survive
-  # the final age class
-  # sx <- survivorship
-  # sx[max.age+1] <- 0
-  #
-  # # Calculate fecundity at age based on knife edge or continous dists.
-  #
-  # if(data$maturity$model.type %in% c("normal", "uniform")){
-  #   mx <- rep(0, length(Age))
-  #   mx[age_at_first_repro:max.age] <- n.pups.year
-  # } else{
-  #   mx <- Fecundity_ogive * n.pups.year
-  # }
-  #
-  # # line up vector so sx and mx are offset by 1 so that eventually fx = mx*sx+1...
-  # a <- mx[-1]
-  #
-  # # add zero to the end so both vectors are the same length again.
-  # MX <- append(a,0,after=length(a))
-  #
-  # # Create top row of matrix
-  # fx <- MX*sx
-  #
-  # # create a matrix entirely of zeros
-  # Sm <- matrix(rep(0),nrow=length(survivorship),ncol=length(survivorship))
-  #
-  # #insert survival along the diagonal
-  # diag(Sm) <- survivorship
-  #
-  # # join fecundity vector to survival matrix without row names
-  # A <- cbind(rbind(fx,Sm,deparse.level = 0),0)
 
   sx <- survivorship
-
-  # sx <- append(sx,0,after = Inf)
 
   # Calculate fecundity at age based on knife edge or continous dists.
 
@@ -574,7 +514,7 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, M.estim
   ############ Matrix projection ##########
 
   # calculate lambda
-  lambda<- eigen.analysis(A)$lambda
+  lambda<- popbio::eigen.analysis(A)$lambda
 
   r <- log(lambda)
 
@@ -594,7 +534,7 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, M.estim
 
   ### Elasticities-----------------
   # Sometimes the matrix won't invert. When this happens, assign NA's to elasticities
-  elast <- eigen.analysis(A)$elasticities
+  elast <- popbio::eigen.analysis(A)$elasticities
   elast.fecund <- sum(elast[1,], na.rm = TRUE)
   if( elast.fecund> 1) { elast.fecund <- NA}
   elast.survival <- apply(elast[2:max.age,],2, sum, na.rm = TRUE)
@@ -650,7 +590,7 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, M.estim
 }
 
 
-#' Estimate the left and right eignvectors (Reproductive value: v and Stable age distribution: w)
+#' Estimate the left and right eigenvectors (Reproductive value: v and Stable age distribution: w)
 #'
 #'@description This function performs a Monte Carlo simulation analysis which determines
 #'     the distributions of the left and right eigenvector. To facilitate this, maximum age
@@ -680,6 +620,26 @@ Estimate_eigenvectors <- function(n = 1000, data, M.estimators = NULL){
 
   ## Error messages ------------------
 
+  # if(!inherits(data,"Demography.inputs")) stop("Input data is not the correct based on the demography data list")
+  #
+  # if(!data$growth$model.type %in%  c("Von Bertalanffy", "logistic", "Gompertz"))
+  #   stop("Growth model type not correctly specified")
+  #
+  # if("Pet.Wro" %in% M.estimators) stop("Peterson and Wrobleski (1984) method has been deprecated since version 1.1.0. as it was easy to miss specify.\n Please remove this from the 'M.estimators' argument")
+  #
+  #
+  # possible_estimators <- c(
+  #   # "Pet.Wro",
+  #   "Jensen.mat","Chen.Yuan","Then_hoenig","Then_pauly", "Jensen","Charnov","Chen.Want")
+  # if(any(!M.estimators %in% possible_estimators)) stop("One or more M estimators are not correctly specified")
+  # if(is.null(M.estimators)){
+  #   M.estimators <- possible_estimators
+  # }
+  #
+  #
+  # # remove all mortality estimates that require VB params if VB is not being used
+  # if(data$growth$model.type != "Von Bertalanffy") M.estimators <- M.estimators[which(!M.estimators %in% c("Chen.Want", "Charnov", "Jensen", "Then_pauly"))]
+  # if(length(M.estimators) == 0) stop("Specified mortality estimators could not be applied")
   if(!inherits(data,"Demography.inputs")) stop("Input data is not the correct based on the demography data list")
 
   if(!data$growth$model.type %in%  c("Von Bertalanffy", "logistic", "Gompertz"))
@@ -687,20 +647,31 @@ Estimate_eigenvectors <- function(n = 1000, data, M.estimators = NULL){
 
   if("Pet.Wro" %in% M.estimators) stop("Peterson and Wrobleski (1984) method has been deprecated since version 1.1.0. as it was easy to miss specify.\n Please remove this from the 'M.estimators' argument")
 
+  if(!is.null(M.estimators)){
+    M.estimators <- dplyr::replace_values(
+      M.estimators,
+      "Jensen.mat" ~ "Jensen_mat",
+      "Chen.Yuan" ~ "Chen_Yuan",
+      "Then_hoenig" ~ "Then_nls",
+      "Then_pauly" ~ "Then_VBGF",
+      "Jensen" ~ "Jensen_k1",
+      "Charnov" ~ "Charnov",
+      "Chen.Want" ~ "Chen-Wat",
+      "Then_lm" ~ "Then_lm",
+      "Hamel_Amax" ~ "Hamel_Amax",
+      "Hamel_k" ~ "Hamel_k"
+    )
+  }
 
-  possible_estimators <- c(
-    # "Pet.Wro",
-    "Jensen.mat","Chen.Yuan","Then_hoenig","Then_pauly", "Jensen","Charnov","Chen.Want")
+  possible_estimators <- c("Jensen_mat","Chen_Yuan","Then_nls","Then_VBGF", "Jensen_k1","Charnov","Chen-Wat", "Then_lm", "Hamel_Amax", "Hamel_k")
   if(any(!M.estimators %in% possible_estimators)) stop("One or more M estimators are not correctly specified")
   if(is.null(M.estimators)){
     M.estimators <- possible_estimators
   }
 
-
   # remove all mortality estimates that require VB params if VB is not being used
-  if(data$growth$model.type != "Von Bertalanffy") M.estimators <- M.estimators[which(!M.estimators %in% c("Chen.Want", "Charnov", "Jensen", "Then_pauly"))]
+  if(data$growth$model.type != "Von Bertalanffy") M.estimators <- M.estimators[which(!M.estimators %in% c("Chen-Wat", "Charnov", "Jensen_k1", "Then_VBGF", "Hamel_k"))]
   if(length(M.estimators) == 0) stop("Specified mortality estimators could not be applied")
-
   #--------------------------
 
   # Empty containers to fill
@@ -708,7 +679,7 @@ Estimate_eigenvectors <- function(n = 1000, data, M.estimators = NULL){
   # colnames(M.table)<- M.estimators
   # P_W_table <-  matrix(nrow = 100, ncol = n)
   # Charnov.table <- matrix(nrow = 100, ncol = n)
-  # Chen.Want.table <- matrix(nrow = 100, ncol = n)
+  # Chen.Wat.table <- matrix(nrow = 100, ncol = n)
 
   if(is.na(data$max.age$min)) stop("No min age specified")
   Stable.age.results <- matrix(nrow = round(data$max.age$min*1.2) + 2, ncol = n)
@@ -866,52 +837,32 @@ Estimate_eigenvectors <- function(n = 1000, data, M.estimators = NULL){
     } else {
       M.table <- matrix(nrow = length(Age), ncol = length(M.estimators))
       colnames(M.table)<-c(M.estimators)
-      # if("Pet.Wro" %in% M.estimators){
-      #
-      #   # If the length weight model type is the same as the length type then no conversion
-      #   # is needed
-      #   if(data$Lt.to.Wt$model.type == data$Lt.type){
-      #     Length.for.wt.conv <- Lt
-      #   } else{
-      #
-      #     # Otherwise perform, conversion as necessary. Currently, this converts TL to
-      #     # PCL or FL only. If PCL or FL is used for length in the growth model then typically
-      #     # They are also used in the length weight relationship and don't need converting.
-      #     if(data$convert.TL$model.type == "PCL" & data$Lt.to.Wt$model.type == "PCL"){
-      #       Length.for.wt.conv<-(Lt-data$convert.TL$pars$a)/data$convert.TL$pars$b
-      #     } else if(data$convert.TL$model.type == "FL" & data$Lt.to.Wt$model.type == "FL"){
-      #       Length.for.wt.conv<-(Lt*data$convert.TL$pars$a)-data$convert.TL$pars$b
-      #     } else if(data$Lt.to.Wt$model.type == "TL"){
-      #       Length.for.wt.conv <- Lt
-      #     } else {
-      #       Length.for.wt.conv <- NA # correct length cannot be calculated so return NA to nullify this method
-      #     }
-      #   }
-      #   Wt <- (data$Lt.to.Wt$pars$a)*Length.for.wt.conv^data$Lt.to.Wt$pars$b
-      #
-      #   M.table[,"Pet.Wro"]<-((Wt^-0.25)*1.92)*0.2
-      #
-      # }
-      if("Jensen.mat" %in% M.estimators){
-        M.table[,"Jensen.mat"] <- 1.65/age_at_maturity}
-      if("Chen.Yuan" %in% M.estimators){
-        M.table[,"Chen.Yuan"] <-exp(1.46-1.01*log(tmax))}
-      if("Then_hoenig" %in% M.estimators){
-        M.table[,"Then_hoenig"] <- 4.899*tmax^-0.916}
-      if("Then_pauly" %in% M.estimators &
+      if("Then_lm" %in% M.estimators){
+        M.table[,"Then_lm"] <- exp(1.717-1.01*log(tmax))}
+      if("Hamel_Amax" %in% M.estimators){
+        M.table[,"Hamel_Amax"] <- 5.4/tmax}
+      if("Hamel_k" %in% M.estimators){
+        M.table[,"Hamel_k"] <- 1.55*k}
+      if("Jensen_mat" %in% M.estimators){
+        M.table[,"Jensen_mat"] <- 1.65/age_at_maturity}
+      if("Chen_Yuan" %in% M.estimators){
+        M.table[,"Chen_Yuan"] <-exp(1.46-1.01*log(tmax))}
+      if("Then_nls" %in% M.estimators){
+        M.table[,"Then_nls"] <- 4.899*tmax^-0.916}
+      if("Then_VBGF" %in% M.estimators &
          data$growth$model.type == "Von Bertalanffy"){
-        Then_pauly <- 4.118*k^0.73*Linf^-0.33
-        M.table <- cbind(M.table, Then_pauly = Then_pauly)
+        Then_VBGF <- 4.118*k^0.73*Linf^-0.33
+        M.table <- cbind(M.table, Then_VBGF = Then_VBGF)
       }
-      if("Jensen" %in% M.estimators&
+      if("Jensen_k1" %in% M.estimators&
          data$growth$model.type == "Von Bertalanffy"){
-        M.table[,"Jensen"] <- 1.5*k
+        M.table[,"Jensen_k1"] <- 1.5*k
       }
       if("Charnov" %in% M.estimators&
          data$growth$model.type == "Von Bertalanffy"){
         M.table[,"Charnov"] <- k*(Lt/Linf)^-1.5
       }
-      if("Chen.Want" %in% M.estimators&
+      if("Chen-Wat" %in% M.estimators&
          data$growth$model.type == "Von Bertalanffy"){
 
         if(!any(names(data$growth$pars) %in% "t0")){
@@ -930,7 +881,7 @@ Estimate_eigenvectors <- function(n = 1000, data, M.estimators = NULL){
           CW <- cbind(CW,cw)
         }
 
-        M.table[,"Chen.Want"] <- as.vector(CW)
+        M.table[,"Chen-Wat"] <- as.vector(CW)
       }
 
       if(ncol(M.table) == 1){
@@ -983,14 +934,14 @@ Estimate_eigenvectors <- function(n = 1000, data, M.estimators = NULL){
 
 
     ############ Matrix projection ##########
-    if(any(is.na(eigen.analysis(A)$repro.value))) next # skip this sim if NA's occur
-    if(any(is.na(eigen.analysis(A)$stable.stage))) next
-    if(any(eigen.analysis(A)$repro.value > 100)) next # skip this sim if extreme values occur
-    if(any(eigen.analysis(A)$stable.stage > 10)) next
+    if(any(is.na(popbio::eigen.analysis(A)$repro.value))) next # skip this sim if NA's occur
+    if(any(is.na(popbio::eigen.analysis(A)$stable.stage))) next
+    if(any(popbio::eigen.analysis(A)$repro.value > 100)) next # skip this sim if extreme values occur
+    if(any(popbio::eigen.analysis(A)$stable.stage > 10)) next
 
 
-    Stable.age.results[,i] <- eigen.analysis(A)$stable.stage
-    Repro.val.results[,i] <- eigen.analysis(A)$repro.value
+    Stable.age.results[,i] <- popbio::eigen.analysis(A)$stable.stage
+    Repro.val.results[,i] <- popbio::eigen.analysis(A)$repro.value
 
   }
 
@@ -1041,7 +992,6 @@ Estimate_eigenvectors <- function(n = 1000, data, M.estimators = NULL){
 Estimate_mortality_dists <- function(n = 1000, data, M.estimators = NULL){
 
   ## Error messages ------------------
-
   if(!inherits(data,"Demography.inputs")) stop("Input data is not the correct based on the demography data list")
 
   if(!data$growth$model.type %in%  c("Von Bertalanffy", "logistic", "Gompertz"))
@@ -1049,29 +999,61 @@ Estimate_mortality_dists <- function(n = 1000, data, M.estimators = NULL){
 
   if("Pet.Wro" %in% M.estimators) stop("Peterson and Wrobleski (1984) method has been deprecated since version 1.1.0. as it was easy to miss specify.\n Please remove this from the 'M.estimators' argument")
 
+  if(!is.null(M.estimators)){
+    M.estimators <- dplyr::replace_values(
+      M.estimators,
+      "Jensen.mat" ~ "Jensen_mat",
+      "Chen.Yuan" ~ "Chen_Yuan",
+      "Then_hoenig" ~ "Then_nls",
+      "Then_pauly" ~ "Then_VBGF",
+      "Jensen" ~ "Jensen_k1",
+      "Charnov" ~ "Charnov",
+      "Chen.Want" ~ "Chen-Wat",
+      "Then_lm" ~ "Then_lm",
+      "Hamel_Amax" ~ "Hamel_Amax",
+      "Hamel_k" ~ "Hamel_k"
+    )
+  }
 
-  possible_estimators <- c(
-    # "Pet.Wro",
-    "Jensen.mat","Chen.Yuan","Then_hoenig","Then_pauly", "Jensen","Charnov","Chen.Want")
+  possible_estimators <- c("Jensen_mat","Chen_Yuan","Then_nls","Then_VBGF", "Jensen_k1","Charnov","Chen-Wat", "Then_lm", "Hamel_Amax", "Hamel_k")
   if(any(!M.estimators %in% possible_estimators)) stop("One or more M estimators are not correctly specified")
   if(is.null(M.estimators)){
     M.estimators <- possible_estimators
   }
 
-
-
   # remove all mortality estimates that require VB params if VB is not being used
-  if(data$growth$model.type != "Von Bertalanffy") M.estimators <- M.estimators[which(!M.estimators %in% c("Chen.Want", "Charnov", "Jensen", "Then_pauly"))]
+  if(data$growth$model.type != "Von Bertalanffy") M.estimators <- M.estimators[which(!M.estimators %in% c("Chen-Wat", "Charnov", "Jensen_k1", "Then_VBGF", "Hamel_k"))]
   if(length(M.estimators) == 0) stop("Specified mortality estimators could not be applied")
+  # if(!inherits(data,"Demography.inputs")) stop("Input data is not the correct based on the demography data list")
+  #
+  # if(!data$growth$model.type %in%  c("Von Bertalanffy", "logistic", "Gompertz"))
+  #   stop("Growth model type not correctly specified")
+  #
+  # if("Pet.Wro" %in% M.estimators) stop("Peterson and Wrobleski (1984) method has been deprecated since version 1.1.0. as it was easy to miss specify.\n Please remove this from the 'M.estimators' argument")
+  #
+  #
+  # possible_estimators <- c(
+  #   # "Pet.Wro",
+  #   "Jensen.mat","Chen.Yuan","Then_hoenig","Then_pauly", "Jensen","Charnov","Chen.Want")
+  # if(any(!M.estimators %in% possible_estimators)) stop("One or more M estimators are not correctly specified")
+  # if(is.null(M.estimators)){
+  #   M.estimators <- possible_estimators
+  # }
+  #
+  #
+  #
+  # # remove all mortality estimates that require VB params if VB is not being used
+  # if(data$growth$model.type != "Von Bertalanffy") M.estimators <- M.estimators[which(!M.estimators %in% c("Chen.Want", "Charnov", "Jensen", "Then_pauly"))]
+  # if(length(M.estimators) == 0) stop("Specified mortality estimators could not be applied")
 
   #--------------------------
 
   # Empty containers to fill
   M.table <- matrix(nrow = n, ncol = length(M.estimators))
   colnames(M.table)<- M.estimators
-  P_W_table <-  matrix(nrow = 100, ncol = n)
+  # P_W_table <-  matrix(nrow = 100, ncol = n)
   Charnov.table <- matrix(nrow = 100, ncol = n)
-  Chen.Want.table <- matrix(nrow = 100, ncol = n)
+  Chen.Wat.table <- matrix(nrow = 100, ncol = n)
 
   pb <- txtProgressBar(title="Demography progress", label="0% done", min=0, max=100, initial=0, style = 3)
   for(i in 1:n){
@@ -1249,26 +1231,31 @@ Estimate_mortality_dists <- function(n = 1000, data, M.estimators = NULL){
     #   P_W_table[1:(max.age+1),i]<-((Wt^-0.25)*1.92)*0.2
     #
     # }
-
-    if("Jensen.mat" %in% M.estimators){
-      M.table[i,"Jensen.mat"] <- 1.65/age_at_maturity}
-    if("Chen.Yuan" %in% M.estimators){
-      M.table[i,"Chen.Yuan"] <-exp(1.46-1.01*log(tmax))}
-    if("Then_hoenig" %in% M.estimators){
-      M.table[i,"Then_hoenig"] <- 4.899*tmax^-0.916}
-    if("Then_pauly" %in% M.estimators &
+    if("Then_lm" %in% M.estimators){
+      M.table[,"Then_lm"] <- exp(1.717-1.01*log(tmax))}
+    if("Hamel_Amax" %in% M.estimators){
+      M.table[,"Hamel_Amax"] <- 5.4/tmax}
+    if("Hamel_k" %in% M.estimators){
+      M.table[,"Hamel_k"] <- 1.55*k}
+    if("Jensen_mat" %in% M.estimators){
+      M.table[i,"Jensen_mat"] <- 1.65/age_at_maturity}
+    if("Chen_Yuan" %in% M.estimators){
+      M.table[i,"Chen_Yuan"] <-exp(1.46-1.01*log(tmax))}
+    if("Then_nls" %in% M.estimators){
+      M.table[i,"Then_nls"] <- 4.899*tmax^-0.916}
+    if("Then_VBGF" %in% M.estimators &
        data$growth$model.type == "Von Bertalanffy"){
-      M.table[i,"Then_pauly"] <- 4.118*k^0.73*Linf^-0.33
+      M.table[i,"Then_VBGF"] <- 4.118*k^0.73*Linf^-0.33
     }
-    if("Jensen" %in% M.estimators&
+    if("Jensen_k1" %in% M.estimators&
        data$growth$model.type == "Von Bertalanffy"){
-      M.table[i,"Jensen" ]  <- 1.5*k
+      M.table[i,"Jensen_k1" ]  <- 1.5*k
     }
     if("Charnov" %in% M.estimators&
        data$growth$model.type == "Von Bertalanffy"){
       Charnov.table[1:(max.age+1),i] <- k*(Lt/Linf)^-1.5
     }
-    if("Chen.Want" %in% M.estimators&
+    if("Chen-Wat" %in% M.estimators&
        data$growth$model.type == "Von Bertalanffy"){
 
       if(!any(names(data$growth$pars) %in% "t0")){
@@ -1287,7 +1274,7 @@ Estimate_mortality_dists <- function(n = 1000, data, M.estimators = NULL){
         CW <- cbind(CW,cw)
       }
 
-      Chen.Want.table[1:(max.age+1),i] <- as.vector(CW)
+      Chen.Wat.table[1:(max.age+1),i] <- as.vector(CW)
     }
 
   }
@@ -1301,23 +1288,23 @@ Estimate_mortality_dists <- function(n = 1000, data, M.estimators = NULL){
               high = quantile(Value,na.rm = TRUE,  probs = c(0.975)),.groups = "drop_last")
 
 
-  if(!all(is.na(P_W_table))){
-    P_W_table <- P_W_table[rowSums(is.na(P_W_table))<nrow(P_W_table),]
-    results_list[["Peterson_wroblewski"]] <-  P_W_table %>%
-      t() %>%
-      as.data.frame() %>%
-      gather(Age, Value) %>%
-      mutate(Age = readr::parse_number(Age)-1) %>%
-      group_by(Age) %>%
-      summarise(AVG = mean(Value,na.rm = TRUE),
-                low = quantile(Value, na.rm = TRUE, probs = c(0.025)),
-                high = quantile(Value,na.rm = TRUE,  probs = c(0.975)),.groups = "drop_last")
-  }
+  # if(!all(is.na(P_W_table))){
+  #   P_W_table <- P_W_table[rowSums(is.na(P_W_table))<nrow(P_W_table),]
+  #   results_list[["Peterson_wroblewski"]] <-  P_W_table %>%
+  #     t() %>%
+  #     as.data.frame() %>%
+  #     gather(Age, Value) %>%
+  #     mutate(Age = readr::parse_number(Age)-1) %>%
+  #     group_by(Age) %>%
+  #     summarise(AVG = mean(Value,na.rm = TRUE),
+  #               low = quantile(Value, na.rm = TRUE, probs = c(0.025)),
+  #               high = quantile(Value,na.rm = TRUE,  probs = c(0.975)),.groups = "drop_last")
+  # }
 
-  if(!all(is.na(Chen.Want.table))){
-    Chen.Want.table <- Chen.Want.table[rowSums(is.na(Chen.Want.table))<ncol(Chen.Want.table),]
+  if(!all(is.na(Chen.Wat.table))){
+    Chen.Wat.table <- Chen.Wat.table[rowSums(is.na(Chen.Wat.table))<ncol(Chen.Wat.table),]
 
-    results_list[["Chen_Watanabe"]]  <- Chen.Want.table %>%
+    results_list[["Chen_Watanabe"]]  <- Chen.Wat.table %>%
       t() %>%
       as.data.frame() %>%
       gather(Age, Value) %>%
@@ -1382,6 +1369,10 @@ Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, F. = 0, M.est
     warning("M.estimators ignored as data contains a pre-specified mortality distribution")
   }
 
+  if(any(M.estimators %in% c("Jensen.mat", "Chen.Yuan" ,  "Then_hoenig" ,  "Then_pauly" ,  "Jensen" ,  "Charnov" ,  "Chen.Want")))
+    message("Note that M.estimator options were renamed after version 1.1.0 to match the natural mortality estimator tool (NOAA)\n This renaming has been automatically applied to your selected options.")
+
+
   lambda.results <- NULL
   R0.results <- NULL
   G.results <- NULL
@@ -1403,7 +1394,7 @@ Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, F. = 0, M.est
       setTxtProgressBar(pb, (i/n)*100, label=info)
     }
 
-     tryCatch(
+    tryCatch(
       {
         tmp <- Calculate_demography(data, AAFC, F., AALC, M.estimators);
         lambda.results[i] <- tmp$`lambda`;
@@ -1534,6 +1525,11 @@ Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, F. = 0, M.est
 #'
 
 Simulate_AAFC<- function(n = 1000, .data, M.estimators = NULL, max.AAFC = 15, n_cores = 1){
+
+
+  if(any(M.estimators %in% c("Jensen.mat", "Chen.Yuan" ,  "Then_hoenig" ,  "Then_pauly" ,  "Jensen" ,  "Charnov" ,  "Chen.Want")))
+    message("Note that M.estimator options were renamed after version 1.1.0 to match the natural mortality estimator tool (NOAA)\n This renaming has been automatically applied to your selected options.")
+
   pb <- txtProgressBar(title="Demography progress", label="0% done", min=0, max=100, initial=0, style = 3)
 
   AAFC.range <- seq(0,max.AAFC, 1)
@@ -1555,20 +1551,20 @@ Simulate_AAFC<- function(n = 1000, .data, M.estimators = NULL, max.AAFC = 15, n_
     setTxtProgressBar(pb, (AAFC/max.AAFC)*100, label=info)
 
     results <- suppressWarnings(foreach::foreach(F. = F.range, .combine = rbind, .packages = c("popbio","iterators"),
-                                        .inorder = TRUE,
-                                        .export = c("Calculate_demography", "AAFC", "data", "M.estimators", "n",ls(envir=globalenv()))) %dopar%{
-                                          foreach::foreach(icount(n), .packages = c("iterators","popbio"),.combine = rbind, .inorder = FALSE,
-                                                  .export = c("Calculate_demography", ls(envir=globalenv()))) %dopar%{
+                                                 .inorder = TRUE,
+                                                 .export = c("Calculate_demography", "AAFC", "data", "M.estimators", "n",ls(envir=globalenv()))) %dopar%{
+                                                   foreach::foreach(icount(n), .packages = c("iterators","popbio"),.combine = rbind, .inorder = FALSE,
+                                                                    .export = c("Calculate_demography", ls(envir=globalenv()))) %dopar%{
 
-                                                    tryCatch(
-                                                      data.frame(AAFC = AAFC, F. = F. ,
-                                                                 lambda = Calculate_demography(data = .data, AALC = NULL, AAFC = AAFC,
-                                                                                               F. = F., M.estimators = M.estimators)$`lambda`),
-                                                      error=function(e){data.frame(AAFC = AAFC, F. = F. , lambda = NA)},
-                                                      silent = TRUE
-                                                    )
+                                                                      tryCatch(
+                                                                        data.frame(AAFC = AAFC, F. = F. ,
+                                                                                   lambda = Calculate_demography(data = .data, AALC = NULL, AAFC = AAFC,
+                                                                                                                 F. = F., M.estimators = M.estimators)$`lambda`),
+                                                                        error=function(e){data.frame(AAFC = AAFC, F. = F. , lambda = NA)},
+                                                                        silent = TRUE
+                                                                      )
 
-                                                  }})
+                                                                    }})
 
     lambda_results <- results %>%
       filter(lambda < 2) %>% # in case irregular values occur and throw off distributions
@@ -1628,6 +1624,11 @@ Simulate_AAFC<- function(n = 1000, .data, M.estimators = NULL, max.AAFC = 15, n_
 #' @import doParallel foreach iterators parallel doFuture
 #'
 Simulate_AALC <- function(n = 1000, data, M.estimators = NULL,  min.AALC = 15, n_cores = 1){
+
+
+  if(any(M.estimators %in% c("Jensen.mat", "Chen.Yuan" ,  "Then_hoenig" ,  "Then_pauly" ,  "Jensen" ,  "Charnov" ,  "Chen.Want")))
+    message("Note that M.estimator options were renamed after version 1.1.0 to match the natural mortality estimator tool (NOAA)\n This renaming has been automatically applied to your selected options.")
+
   pb <- txtProgressBar(title="Demography progress", label="0% done", min=0, max=100, initial=0, style = 3)
 
   AALC.range <- seq(0,min.AALC, 1)
@@ -1651,18 +1652,18 @@ Simulate_AALC <- function(n = 1000, data, M.estimators = NULL,  min.AALC = 15, n
 
     results <- suppressWarnings(
       foreach::foreach(F. = F.range, .combine = rbind, .packages = c("popbio","iterators"),
-              .inorder = TRUE,
-              .export = c("Calculate_demography", "AALC", "data", "M.estimators", "n",ls(envir=globalenv()))) %dopar%{
-                foreach::foreach(icount(n), .packages = c("iterators","popbio"),.combine = rbind, .inorder = FALSE,
-                        .export = c("Calculate_demography", "AALC", "data", "M.estimators", "n",ls(envir=globalenv()))) %dopar%{
-                          tryCatch(
-                            data.frame(AALC = AALC, F. = F. ,
-                                       lambda = Calculate_demography(data = data, AALC = AALC,
-                                                                     F. = F., M.estimators = M.estimators)$`lambda`),
-                            error=function(e){data.frame(AALC = AALC, F. = F. , lambda = NA)},
-                            silent = TRUE
-                          )
-                        }})
+                       .inorder = TRUE,
+                       .export = c("Calculate_demography", "AALC", "data", "M.estimators", "n",ls(envir=globalenv()))) %dopar%{
+                         foreach::foreach(icount(n), .packages = c("iterators","popbio"),.combine = rbind, .inorder = FALSE,
+                                          .export = c("Calculate_demography", "AALC", "data", "M.estimators", "n",ls(envir=globalenv()))) %dopar%{
+                                            tryCatch(
+                                              data.frame(AALC = AALC, F. = F. ,
+                                                         lambda = Calculate_demography(data = data, AALC = AALC,
+                                                                                       F. = F., M.estimators = M.estimators)$`lambda`),
+                                              error=function(e){data.frame(AALC = AALC, F. = F. , lambda = NA)},
+                                              silent = TRUE
+                                            )
+                                          }})
 
     lambda_results <- results %>%
       filter(lambda < 2) %>% # in case irregular values occur and throw off distributions
@@ -1727,6 +1728,10 @@ Simulate_AALC <- function(n = 1000, data, M.estimators = NULL,  min.AALC = 15, n
 
 Simulate_F_critical <- function(n = 1000, .data, M.estimators = NULL, max.F = 0.3, n_cores = 1){
 
+
+  if(any(M.estimators %in% c("Jensen.mat", "Chen.Yuan" ,  "Then_hoenig" ,  "Then_pauly" ,  "Jensen" ,  "Charnov" ,  "Chen.Want")))
+    message("Note that M.estimator options were renamed after version 1.1.0 to match the natural mortality estimator tool (NOAA)\n This renaming has been automatically applied to your selected options.")
+
   F.range <- seq(0,max.F,0.01)
 
   if(n_cores >  parallel::detectCores()-1) {
@@ -1739,15 +1744,15 @@ Simulate_F_critical <- function(n = 1000, .data, M.estimators = NULL, max.F = 0.
   doFuture::registerDoFuture()
 
   results <- suppressWarnings(foreach::foreach(F. = F.range, .combine = rbind, .packages = c("popbio","iterators"),
-                                      .inorder = TRUE,
-                                      .export = c("Calculate_demography", "AAFC", "data", "M.estimators", "n",ls(envir=globalenv()))) %dopar%{
+                                               .inorder = TRUE,
+                                               .export = c("Calculate_demography", "AAFC", "data", "M.estimators", "n",ls(envir=globalenv()))) %dopar%{
 
-                                        foreach::foreach(icount(n), .packages = c("iterators","popbio"),.combine = rbind, .inorder = FALSE,
-                                                .export = c("Calculate_demography", ls(envir=globalenv()))) %dopar%{
-                                                  data.frame(F. = F. ,
-                                                             lambda = Calculate_demography(data = .data, AALC = NULL, AAFC = 0,
-                                                                                           F. = F., M.estimators = M.estimators)$`lambda`)
-                                                }})
+                                                 foreach::foreach(icount(n), .packages = c("iterators","popbio"),.combine = rbind, .inorder = FALSE,
+                                                                  .export = c("Calculate_demography", ls(envir=globalenv()))) %dopar%{
+                                                                    data.frame(F. = F. ,
+                                                                               lambda = Calculate_demography(data = .data, AALC = NULL, AAFC = 0,
+                                                                                                             F. = F., M.estimators = M.estimators)$`lambda`)
+                                                                  }})
 
 
   suppressWarnings(parallel::stopCluster(cl))
@@ -1813,6 +1818,10 @@ Simulate_harvest_slots <- function(n, data,  M.estimators = NULL,
   if(length(HS.width)==1) stop("HS.width must be a range")
   if(length(max.F)!=1) stop("max.F must be a single value")
 
+
+  if(any(M.estimators %in% c("Jensen.mat", "Chen.Yuan" ,  "Then_hoenig" ,  "Then_pauly" ,  "Jensen" ,  "Charnov" ,  "Chen.Want")))
+    message("Note that M.estimator options were renamed after version 1.1.0 to match the natural mortality estimator tool (NOAA)\n This renaming has been automatically applied to your selected options.")
+
   Results <- expand.grid(Age.mid.point = Age.mid.point, HS.width = HS.width, F. = seq(0,max.F,.05),
                          Lambda = NA,  low = NA, upp = NA)
 
@@ -1847,7 +1856,7 @@ Simulate_harvest_slots <- function(n, data,  M.estimators = NULL,
     slice(which.max(F.))
 
 
-   tryCatch(
+  tryCatch(
     {
       interp.data <- interp::interp(Results$MinAge, Results$MaxAge, Results$F., nx = 300, ny = 300, duplicate = "mean");
       final_results <- interp.data %>% interp::interp2xyz() %>% as.data.frame() %>% na.omit;
