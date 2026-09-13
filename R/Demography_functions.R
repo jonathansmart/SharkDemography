@@ -174,7 +174,7 @@ create_data_input <- function(maturity.type, t0 = FALSE){
 #' @export
 #' @import popbio
 #'
-Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, M.estimators = NULL){
+Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, ASel = NULL, M.estimators = NULL){
 
   ### Error messages --------------
 
@@ -212,9 +212,12 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, M.estim
   if(data$growth$model.type != "Von Bertalanffy") M.estimators <- M.estimators[which(!M.estimators %in% c("Chen-Wat", "Charnov", "Jensen_k1", "Then_VBGF", "Hamel_k"))]
   if(length(M.estimators) == 0) stop("Specified mortality estimators could not be applied")
 
-  if(is.null(AALC) & is.null(AAFC) & F. > 0){
-    warning("No fishing mortality applied as neither AAFC or AALC are specified")
+  if(is.null(AALC) & is.null(AAFC) & is.null(ASel) & F. > 0){
+    warning("No fishing mortality applied as neither AAFC, AALC, or ASel are specified")
   }
+
+  if(any(!is.null(AAFC), !is.null(AALC))& !is.null(ASel))
+    warning("AAFC or AALC specified but are overridden by ASel. Don't use these in combination")
 
   ### Estimate growth ----------------
 
@@ -475,8 +478,20 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, M.estim
     for(j in seq_along(Age)){
       if(Age[j]<=AALC & Age[j]>=AAFC){survivorship[j] <- exp(-(Mortality[j]+F.))}
     }
+  }
 
-    #stop("AAFC and AALC cannot be used simulatneously")
+  # Overide if ASel is specified but provide warning
+  if(!is.null(ASel)){
+
+    # Extend final ASel value to the full age range of this simulation
+    Asel_extended <-  append(ASel,rep( ASel[length(ASel)],length(Mortality)-length(ASel)))
+
+    # Apply Age based selectivity to F.
+    F_Asel <- Asel_extended*F.
+
+    # Calculate survivorship by Age based on Asel, F. and M
+    survivorship <- exp(-(Mortality+F_Asel))
+
   }
 
 
@@ -1363,7 +1378,7 @@ Estimate_mortality_dists <- function(n = 1000, data, M.estimators = NULL){
 #'
 #' Simulate_demography(n = 100, Silky_data)
 #' @export
-Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, F. = 0, M.estimators = NULL, Verbatim = TRUE){
+Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, ASel = NULL, F. = 0, M.estimators = NULL, Verbatim = TRUE){
 
   if(all(!is.na(data$Mortality$mean), !is.na(data$Mortality$se))){
     warning("M.estimators ignored as data contains a pre-specified mortality distribution")
@@ -1396,7 +1411,7 @@ Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, F. = 0, M.est
 
     tryCatch(
       {
-        tmp <- Calculate_demography(data, AAFC, F., AALC, M.estimators);
+        tmp <- Calculate_demography(data = data, AAFC = AAFC, ASel = ASel, F. = F., AALC = AALC, M.estimators = M.estimators);
         lambda.results[i] <- tmp$`lambda`;
         R0.results[i] <- tmp$`R0`;
         G.results[i] <- tmp$`G`;
@@ -1455,7 +1470,7 @@ Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, F. = 0, M.est
   adult.ratio.summary <- c(mean(adult.ratio, na.rm = TRUE),
                            quantile(adult.ratio, c(.025, .975),na.rm = TRUE))
 
-  simulations <- bind_cols(Lambda = lambda.results,
+  simulations <- dplyr::bind_cols(Lambda = lambda.results,
                            R0 = R0.results,
                            G = G.results,
                            elast.fecund = elast.fecund,
@@ -1726,7 +1741,7 @@ Simulate_AALC <- function(n = 1000, data, M.estimators = NULL,  min.AALC = 15, n
 #' Simulate_F_critical(n = 10, Silky_data, n_cores = 1)
 #' @import doParallel foreach iterators parallel doFuture
 
-Simulate_F_critical <- function(n = 1000, .data, M.estimators = NULL, max.F = 0.3, n_cores = 1){
+Simulate_F_critical <- function(n = 1000, .data, M.estimators = NULL, ASel = NULL, max.F = 0.3, n_cores = 1){
 
 
   if(any(M.estimators %in% c("Jensen.mat", "Chen.Yuan" ,  "Then_hoenig" ,  "Then_pauly" ,  "Jensen" ,  "Charnov" ,  "Chen.Want")))
@@ -1743,6 +1758,18 @@ Simulate_F_critical <- function(n = 1000, .data, M.estimators = NULL, max.F = 0.
   doParallel::registerDoParallel(cl)
   doFuture::registerDoFuture()
 
+  if(is.null(ASel)){
+    results <- suppressWarnings(foreach::foreach(F. = F.range, .combine = rbind, .packages = c("popbio","iterators"),
+                                                 .inorder = TRUE,
+                                                 .export = c("Calculate_demography", "AAFC", "data", "M.estimators", "n",ls(envir=globalenv()))) %dopar%{
+
+                                                   foreach::foreach(icount(n), .packages = c("iterators","popbio"),.combine = rbind, .inorder = FALSE,
+                                                                    .export = c("Calculate_demography", ls(envir=globalenv()))) %dopar%{
+                                                                      data.frame(F. = F. ,
+                                                                                 lambda = Calculate_demography(data = .data, AALC = NULL, AAFC = 0,
+                                                                                                               F. = F., M.estimators = M.estimators)$`lambda`)
+                                                                    }})
+  } else {
   results <- suppressWarnings(foreach::foreach(F. = F.range, .combine = rbind, .packages = c("popbio","iterators"),
                                                .inorder = TRUE,
                                                .export = c("Calculate_demography", "AAFC", "data", "M.estimators", "n",ls(envir=globalenv()))) %dopar%{
@@ -1750,9 +1777,11 @@ Simulate_F_critical <- function(n = 1000, .data, M.estimators = NULL, max.F = 0.
                                                  foreach::foreach(icount(n), .packages = c("iterators","popbio"),.combine = rbind, .inorder = FALSE,
                                                                   .export = c("Calculate_demography", ls(envir=globalenv()))) %dopar%{
                                                                     data.frame(F. = F. ,
-                                                                               lambda = Calculate_demography(data = .data, AALC = NULL, AAFC = 0,
+                                                                               lambda = Calculate_demography(data = .data, AALC = NULL, AAFC = NULL, ASel = ASel,
                                                                                                              F. = F., M.estimators = M.estimators)$`lambda`)
                                                                   }})
+
+  }
 
 
   suppressWarnings(parallel::stopCluster(cl))
