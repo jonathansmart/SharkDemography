@@ -1380,6 +1380,9 @@ Estimate_mortality_dists <- function(n = 1000, data, M.estimators = NULL){
 #' @export
 Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, ASel = NULL, F. = 0, M.estimators = NULL, Verbatim = TRUE){
 
+
+  #input data checking ----
+
   if(all(!is.na(data$Mortality$mean), !is.na(data$Mortality$se))){
     warning("M.estimators ignored as data contains a pre-specified mortality distribution")
   }
@@ -1387,6 +1390,57 @@ Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, ASel = NULL, 
   if(any(M.estimators %in% c("Jensen.mat", "Chen.Yuan" ,  "Then_hoenig" ,  "Then_pauly" ,  "Jensen" ,  "Charnov" ,  "Chen.Want")))
     message("Note that M.estimator options were renamed after version 1.1.0 to match the natural mortality estimator tool (NOAA)\n This renaming has been automatically applied to your selected options.")
 
+  # error messages from inside `Calculate_demography()` that can't be returned due to trycatch
+  if(!inherits(data,"Demography.inputs")) stop("Input data is not the correct based on the demography data list")
+
+  if(!data$growth$model.type %in%  c("Von Bertalanffy", "logistic", "Gompertz"))
+    stop("Growth model type not correctly specified")
+
+  if("Pet.Wro" %in% M.estimators) stop("Peterson and Wrobleski (1984) method has been deprecated since version 1.1.0. as it was easy to miss specify.\n Please remove this from the 'M.estimators' argument")
+
+  if(!is.null(M.estimators)){
+    M.estimators <- dplyr::replace_values(
+      M.estimators,
+      "Jensen.mat" ~ "Jensen_mat",
+      "Chen.Yuan" ~ "Chen_Yuan",
+      "Then_hoenig" ~ "Then_nls",
+      "Then_pauly" ~ "Then_VBGF",
+      "Jensen" ~ "Jensen_k1",
+      "Charnov" ~ "Charnov",
+      "Chen.Want" ~ "Chen-Wat",
+      "Then_lm" ~ "Then_lm",
+      "Hamel_Amax" ~ "Hamel_Amax",
+      "Hamel_k" ~ "Hamel_k"
+    )
+  }
+
+  possible_estimators <- c("Jensen_mat","Chen_Yuan","Then_nls","Then_VBGF", "Jensen_k1","Charnov","Chen-Wat", "Then_lm", "Hamel_Amax", "Hamel_k")
+  if(any(!M.estimators %in% possible_estimators)) stop("One or more M estimators are not correctly specified")
+
+  if(is.na(data$max.age$min))
+    stop("No min age specified")
+
+  if(!data$`growth`$model.type %in% c("Von Bertalanffy", "Gompertz", "logistic"))
+    stop("model.type incorrectely specific for growth")
+
+  if(is.na(data$gest.period))
+    stop("No gestation period specified")
+
+  if(data$gest.period > 4)
+    warning("Gestation period should be specified in years, not months. Check inputs")
+
+  if(is.na(data$repro.cycle))
+    stop("No reproductive cycle (periodicity) specified")
+
+  if(!data$maturity$model.type %in% c("logistic - int/slope", "logistic - a50/a95", "uniform", "normal"))
+    stop("Maturity model type is not correctly specified.")
+
+  if(any(is.na(data$litter.size$mean), is.na(data$litter.size$se)))
+    stop("No litter size mean and/or se specified")
+
+
+
+  # Analysis -----
 
   lambda.results <- NULL
   R0.results <- NULL
@@ -1471,14 +1525,14 @@ Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, ASel = NULL, 
                            quantile(adult.ratio, c(.025, .975),na.rm = TRUE))
 
   simulations <- dplyr::bind_cols(Lambda = lambda.results,
-                           R0 = R0.results,
-                           G = G.results,
-                           elast.fecund = elast.fecund,
-                           elast.juv.survival = elast.juv.survival,
-                           elast.adult.survival = elast.adult.survival,
-                           juv.ratio=juv.ratio,
-                           adult.ratio = adult.ratio,
-                           M.estimator = M.estimator)
+                                  R0 = R0.results,
+                                  G = G.results,
+                                  elast.fecund = elast.fecund,
+                                  elast.juv.survival = elast.juv.survival,
+                                  elast.adult.survival = elast.adult.survival,
+                                  juv.ratio=juv.ratio,
+                                  adult.ratio = adult.ratio,
+                                  M.estimator = M.estimator)
 
   Results <- rbind(lambda.summary,G.summary,R0.summary,
                    elast.fecund.summary,elast.juv.survival.summary,elast.adult.survival.summary,
@@ -1542,8 +1596,62 @@ Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, ASel = NULL, 
 Simulate_AAFC<- function(n = 1000, .data, M.estimators = NULL, max.AAFC = 15, n_cores = 1){
 
 
+  #input data checking ----
+
+  if(all(!is.na(data$Mortality$mean), !is.na(data$Mortality$se))){
+    warning("M.estimators ignored as data contains a pre-specified mortality distribution")
+  }
+
   if(any(M.estimators %in% c("Jensen.mat", "Chen.Yuan" ,  "Then_hoenig" ,  "Then_pauly" ,  "Jensen" ,  "Charnov" ,  "Chen.Want")))
     message("Note that M.estimator options were renamed after version 1.1.0 to match the natural mortality estimator tool (NOAA)\n This renaming has been automatically applied to your selected options.")
+
+  # error messages from inside `Calculate_demography()` that can't be returned due to trycatch
+  if(!inherits(data,"Demography.inputs")) stop("Input data is not the correct based on the demography data list")
+
+  if(!data$growth$model.type %in%  c("Von Bertalanffy", "logistic", "Gompertz"))
+    stop("Growth model type not correctly specified")
+
+  if("Pet.Wro" %in% M.estimators) stop("Peterson and Wrobleski (1984) method has been deprecated since version 1.1.0. as it was easy to miss specify.\n Please remove this from the 'M.estimators' argument")
+
+  if(!is.null(M.estimators)){
+    M.estimators <- dplyr::replace_values(
+      M.estimators,
+      "Jensen.mat" ~ "Jensen_mat",
+      "Chen.Yuan" ~ "Chen_Yuan",
+      "Then_hoenig" ~ "Then_nls",
+      "Then_pauly" ~ "Then_VBGF",
+      "Jensen" ~ "Jensen_k1",
+      "Charnov" ~ "Charnov",
+      "Chen.Want" ~ "Chen-Wat",
+      "Then_lm" ~ "Then_lm",
+      "Hamel_Amax" ~ "Hamel_Amax",
+      "Hamel_k" ~ "Hamel_k"
+    )
+  }
+
+  possible_estimators <- c("Jensen_mat","Chen_Yuan","Then_nls","Then_VBGF", "Jensen_k1","Charnov","Chen-Wat", "Then_lm", "Hamel_Amax", "Hamel_k")
+  if(any(!M.estimators %in% possible_estimators)) stop("One or more M estimators are not correctly specified")
+
+  if(is.na(data$max.age$min))
+    stop("No min age specified")
+
+  if(!data$`growth`$model.type %in% c("Von Bertalanffy", "Gompertz", "logistic"))
+    stop("model.type incorrectely specific for growth")
+
+  if(is.na(data$gest.period))
+    stop("No gestation period specified")
+
+  if(data$gest.period > 4)
+    warning("Gestation period should be specified in years, not months. Check inputs")
+
+  if(is.na(data$repro.cycle))
+    stop("No reproductive cycle (periodicity) specified")
+
+  if(!data$maturity$model.type %in% c("logistic - int/slope", "logistic - a50/a95", "uniform", "normal"))
+    stop("Maturity model type is not correctly specified.")
+
+  if(any(is.na(data$litter.size$mean), is.na(data$litter.size$se)))
+    stop("No litter size mean and/or se specified")
 
   pb <- txtProgressBar(title="Demography progress", label="0% done", min=0, max=100, initial=0, style = 3)
 
@@ -1640,9 +1748,62 @@ Simulate_AAFC<- function(n = 1000, .data, M.estimators = NULL, max.AAFC = 15, n_
 #'
 Simulate_AALC <- function(n = 1000, data, M.estimators = NULL,  min.AALC = 15, n_cores = 1){
 
+  #input data checking ----
+
+  if(all(!is.na(data$Mortality$mean), !is.na(data$Mortality$se))){
+    warning("M.estimators ignored as data contains a pre-specified mortality distribution")
+  }
 
   if(any(M.estimators %in% c("Jensen.mat", "Chen.Yuan" ,  "Then_hoenig" ,  "Then_pauly" ,  "Jensen" ,  "Charnov" ,  "Chen.Want")))
     message("Note that M.estimator options were renamed after version 1.1.0 to match the natural mortality estimator tool (NOAA)\n This renaming has been automatically applied to your selected options.")
+
+  # error messages from inside `Calculate_demography()` that can't be returned due to trycatch
+  if(!inherits(data,"Demography.inputs")) stop("Input data is not the correct based on the demography data list")
+
+  if(!data$growth$model.type %in%  c("Von Bertalanffy", "logistic", "Gompertz"))
+    stop("Growth model type not correctly specified")
+
+  if("Pet.Wro" %in% M.estimators) stop("Peterson and Wrobleski (1984) method has been deprecated since version 1.1.0. as it was easy to miss specify.\n Please remove this from the 'M.estimators' argument")
+
+  if(!is.null(M.estimators)){
+    M.estimators <- dplyr::replace_values(
+      M.estimators,
+      "Jensen.mat" ~ "Jensen_mat",
+      "Chen.Yuan" ~ "Chen_Yuan",
+      "Then_hoenig" ~ "Then_nls",
+      "Then_pauly" ~ "Then_VBGF",
+      "Jensen" ~ "Jensen_k1",
+      "Charnov" ~ "Charnov",
+      "Chen.Want" ~ "Chen-Wat",
+      "Then_lm" ~ "Then_lm",
+      "Hamel_Amax" ~ "Hamel_Amax",
+      "Hamel_k" ~ "Hamel_k"
+    )
+  }
+
+  possible_estimators <- c("Jensen_mat","Chen_Yuan","Then_nls","Then_VBGF", "Jensen_k1","Charnov","Chen-Wat", "Then_lm", "Hamel_Amax", "Hamel_k")
+  if(any(!M.estimators %in% possible_estimators)) stop("One or more M estimators are not correctly specified")
+
+  if(is.na(data$max.age$min))
+    stop("No min age specified")
+
+  if(!data$`growth`$model.type %in% c("Von Bertalanffy", "Gompertz", "logistic"))
+    stop("model.type incorrectely specific for growth")
+
+  if(is.na(data$gest.period))
+    stop("No gestation period specified")
+
+  if(data$gest.period > 4)
+    warning("Gestation period should be specified in years, not months. Check inputs")
+
+  if(is.na(data$repro.cycle))
+    stop("No reproductive cycle (periodicity) specified")
+
+  if(!data$maturity$model.type %in% c("logistic - int/slope", "logistic - a50/a95", "uniform", "normal"))
+    stop("Maturity model type is not correctly specified.")
+
+  if(any(is.na(data$litter.size$mean), is.na(data$litter.size$se)))
+    stop("No litter size mean and/or se specified")
 
   pb <- txtProgressBar(title="Demography progress", label="0% done", min=0, max=100, initial=0, style = 3)
 
@@ -1744,8 +1905,62 @@ Simulate_AALC <- function(n = 1000, data, M.estimators = NULL,  min.AALC = 15, n
 Simulate_F_critical <- function(n = 1000, .data, M.estimators = NULL, ASel = NULL, max.F = 0.3, n_cores = 1){
 
 
+  #input data checking ----
+
+  if(all(!is.na(data$Mortality$mean), !is.na(data$Mortality$se))){
+    warning("M.estimators ignored as data contains a pre-specified mortality distribution")
+  }
+
   if(any(M.estimators %in% c("Jensen.mat", "Chen.Yuan" ,  "Then_hoenig" ,  "Then_pauly" ,  "Jensen" ,  "Charnov" ,  "Chen.Want")))
     message("Note that M.estimator options were renamed after version 1.1.0 to match the natural mortality estimator tool (NOAA)\n This renaming has been automatically applied to your selected options.")
+
+  # error messages from inside `Calculate_demography()` that can't be returned due to trycatch
+  if(!inherits(data,"Demography.inputs")) stop("Input data is not the correct based on the demography data list")
+
+  if(!data$growth$model.type %in%  c("Von Bertalanffy", "logistic", "Gompertz"))
+    stop("Growth model type not correctly specified")
+
+  if("Pet.Wro" %in% M.estimators) stop("Peterson and Wrobleski (1984) method has been deprecated since version 1.1.0. as it was easy to miss specify.\n Please remove this from the 'M.estimators' argument")
+
+  if(!is.null(M.estimators)){
+    M.estimators <- dplyr::replace_values(
+      M.estimators,
+      "Jensen.mat" ~ "Jensen_mat",
+      "Chen.Yuan" ~ "Chen_Yuan",
+      "Then_hoenig" ~ "Then_nls",
+      "Then_pauly" ~ "Then_VBGF",
+      "Jensen" ~ "Jensen_k1",
+      "Charnov" ~ "Charnov",
+      "Chen.Want" ~ "Chen-Wat",
+      "Then_lm" ~ "Then_lm",
+      "Hamel_Amax" ~ "Hamel_Amax",
+      "Hamel_k" ~ "Hamel_k"
+    )
+  }
+
+  possible_estimators <- c("Jensen_mat","Chen_Yuan","Then_nls","Then_VBGF", "Jensen_k1","Charnov","Chen-Wat", "Then_lm", "Hamel_Amax", "Hamel_k")
+  if(any(!M.estimators %in% possible_estimators)) stop("One or more M estimators are not correctly specified")
+
+  if(is.na(data$max.age$min))
+    stop("No min age specified")
+
+  if(!data$`growth`$model.type %in% c("Von Bertalanffy", "Gompertz", "logistic"))
+    stop("model.type incorrectely specific for growth")
+
+  if(is.na(data$gest.period))
+    stop("No gestation period specified")
+
+  if(data$gest.period > 4)
+    warning("Gestation period should be specified in years, not months. Check inputs")
+
+  if(is.na(data$repro.cycle))
+    stop("No reproductive cycle (periodicity) specified")
+
+  if(!data$maturity$model.type %in% c("logistic - int/slope", "logistic - a50/a95", "uniform", "normal"))
+    stop("Maturity model type is not correctly specified.")
+
+  if(any(is.na(data$litter.size$mean), is.na(data$litter.size$se)))
+    stop("No litter size mean and/or se specified")
 
   F.range <- seq(0,max.F,0.01)
 
@@ -1770,16 +1985,16 @@ Simulate_F_critical <- function(n = 1000, .data, M.estimators = NULL, ASel = NUL
                                                                                                                F. = F., M.estimators = M.estimators)$`lambda`)
                                                                     }})
   } else {
-  results <- suppressWarnings(foreach::foreach(F. = F.range, .combine = rbind, .packages = c("popbio","iterators"),
-                                               .inorder = TRUE,
-                                               .export = c("Calculate_demography", "AAFC", "data", "M.estimators", "n",ls(envir=globalenv()))) %dopar%{
+    results <- suppressWarnings(foreach::foreach(F. = F.range, .combine = rbind, .packages = c("popbio","iterators"),
+                                                 .inorder = TRUE,
+                                                 .export = c("Calculate_demography", "AAFC", "data", "M.estimators", "n",ls(envir=globalenv()))) %dopar%{
 
-                                                 foreach::foreach(icount(n), .packages = c("iterators","popbio"),.combine = rbind, .inorder = FALSE,
-                                                                  .export = c("Calculate_demography", ls(envir=globalenv()))) %dopar%{
-                                                                    data.frame(F. = F. ,
-                                                                               lambda = Calculate_demography(data = .data, AALC = NULL, AAFC = NULL, ASel = ASel,
-                                                                                                             F. = F., M.estimators = M.estimators)$`lambda`)
-                                                                  }})
+                                                   foreach::foreach(icount(n), .packages = c("iterators","popbio"),.combine = rbind, .inorder = FALSE,
+                                                                    .export = c("Calculate_demography", ls(envir=globalenv()))) %dopar%{
+                                                                      data.frame(F. = F. ,
+                                                                                 lambda = Calculate_demography(data = .data, AALC = NULL, AAFC = NULL, ASel = ASel,
+                                                                                                               F. = F., M.estimators = M.estimators)$`lambda`)
+                                                                    }})
 
   }
 
@@ -1847,9 +2062,62 @@ Simulate_harvest_slots <- function(n, data,  M.estimators = NULL,
   if(length(HS.width)==1) stop("HS.width must be a range")
   if(length(max.F)!=1) stop("max.F must be a single value")
 
+  #input data checking ----
+
+  if(all(!is.na(data$Mortality$mean), !is.na(data$Mortality$se))){
+    warning("M.estimators ignored as data contains a pre-specified mortality distribution")
+  }
 
   if(any(M.estimators %in% c("Jensen.mat", "Chen.Yuan" ,  "Then_hoenig" ,  "Then_pauly" ,  "Jensen" ,  "Charnov" ,  "Chen.Want")))
     message("Note that M.estimator options were renamed after version 1.1.0 to match the natural mortality estimator tool (NOAA)\n This renaming has been automatically applied to your selected options.")
+
+  # error messages from inside `Calculate_demography()` that can't be returned due to trycatch
+  if(!inherits(data,"Demography.inputs")) stop("Input data is not the correct based on the demography data list")
+
+  if(!data$growth$model.type %in%  c("Von Bertalanffy", "logistic", "Gompertz"))
+    stop("Growth model type not correctly specified")
+
+  if("Pet.Wro" %in% M.estimators) stop("Peterson and Wrobleski (1984) method has been deprecated since version 1.1.0. as it was easy to miss specify.\n Please remove this from the 'M.estimators' argument")
+
+  if(!is.null(M.estimators)){
+    M.estimators <- dplyr::replace_values(
+      M.estimators,
+      "Jensen.mat" ~ "Jensen_mat",
+      "Chen.Yuan" ~ "Chen_Yuan",
+      "Then_hoenig" ~ "Then_nls",
+      "Then_pauly" ~ "Then_VBGF",
+      "Jensen" ~ "Jensen_k1",
+      "Charnov" ~ "Charnov",
+      "Chen.Want" ~ "Chen-Wat",
+      "Then_lm" ~ "Then_lm",
+      "Hamel_Amax" ~ "Hamel_Amax",
+      "Hamel_k" ~ "Hamel_k"
+    )
+  }
+
+  possible_estimators <- c("Jensen_mat","Chen_Yuan","Then_nls","Then_VBGF", "Jensen_k1","Charnov","Chen-Wat", "Then_lm", "Hamel_Amax", "Hamel_k")
+  if(any(!M.estimators %in% possible_estimators)) stop("One or more M estimators are not correctly specified")
+
+  if(is.na(data$max.age$min))
+    stop("No min age specified")
+
+  if(!data$`growth`$model.type %in% c("Von Bertalanffy", "Gompertz", "logistic"))
+    stop("model.type incorrectely specific for growth")
+
+  if(is.na(data$gest.period))
+    stop("No gestation period specified")
+
+  if(data$gest.period > 4)
+    warning("Gestation period should be specified in years, not months. Check inputs")
+
+  if(is.na(data$repro.cycle))
+    stop("No reproductive cycle (periodicity) specified")
+
+  if(!data$maturity$model.type %in% c("logistic - int/slope", "logistic - a50/a95", "uniform", "normal"))
+    stop("Maturity model type is not correctly specified.")
+
+  if(any(is.na(data$litter.size$mean), is.na(data$litter.size$se)))
+    stop("No litter size mean and/or se specified")
 
   Results <- expand.grid(Age.mid.point = Age.mid.point, HS.width = HS.width, F. = seq(0,max.F,.05),
                          Lambda = NA,  low = NA, upp = NA)
