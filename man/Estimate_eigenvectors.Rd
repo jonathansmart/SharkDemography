@@ -2,7 +2,7 @@
 % Please edit documentation in R/Demography_functions.R
 \name{Estimate_eigenvectors}
 \alias{Estimate_eigenvectors}
-\title{Estimate the left and right eignvectors (Reproductive value: v and Stable age distribution: w)}
+\title{Estimate the left and right eigenvectors (Reproductive value: v and Stable age distribution: w)}
 \usage{
 Estimate_eigenvectors(n = 1000, data, M.estimators = NULL)
 }
@@ -13,7 +13,7 @@ Estimate_eigenvectors(n = 1000, data, M.estimators = NULL)
 `create_data_input` function and then manually completed.}
 
 \item{M.estimators}{Any specific natural mortality estimators to be included in the analysis.
- Must be a single estimator or a vector of estimators. These can include: "Pet.Wro",
+ Must be a single estimator or a vector of estimators. These can include:
 "Jensen.mat","Chen.Yuan","Then_hoenig","Then_pauly", "Jensen.mat","Charnov" or
 "Chen.Want". If none are specified then all applicable estimators could be chosen.}
 }

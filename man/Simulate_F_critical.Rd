@@ -6,8 +6,9 @@
 \usage{
 Simulate_F_critical(
   n = 1000,
-  .data,
+  data,
   M.estimators = NULL,
+  ASel = NULL,
   max.F = 0.3,
   n_cores = 1
 )
@@ -16,12 +17,12 @@ Simulate_F_critical(
 \item{n}{The number of simulations to be run. 1000 is recomended but smaller numbers
 should be run when testing to avoid long run times.}
 
-\item{.data}{A multi-level list of the class `Demography.inputs` produced from the
+\item{data}{A multi-level list of the class `Demography.inputs` produced from the
 `create_data_input` function and then manually completed.}
 
 \item{M.estimators}{Any specific natural mortality estimators to be included in the analysis.
 Only one will be used in each run which is randomly selected. Must be a single estimator
-or a vector of estimators. These can include: "Pet.Wro","Jensen.mat","Chen.Yuan",
+or a vector of estimators. These can include: "Jensen.mat","Chen.Yuan",
 "Then_hoenig","Then_pauly", "Jensen.mat","Charnov" or "Chen.Want". If none are specified
 then all applicable estimators could be chosen.}
 

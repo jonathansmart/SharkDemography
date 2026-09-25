@@ -9,6 +9,7 @@ Calculate_demography(
   AAFC = NULL,
   F. = 0,
   AALC = NULL,
+  ASel = NULL,
   M.estimators = NULL
 )
 }
@@ -29,7 +30,7 @@ ages available to capture as defined by either the AALC or AAFC arguments.}
 \item{M.estimators}{Any specific natural mortality estimators to be included in the analysis.
 Only one will be used in each run which is randomly selected. In the simulation functions
 these will be varied among simulations. Must be a single estimator or a vector of estimators.
-These can include: "Pet.Wro","Jensen.mat","Chen.Yuan","Then_hoenig","Then_pauly", "
+These can include: "Jensen.mat","Chen.Yuan","Then_hoenig","Then_pauly", "
 Jensen.mat","Charnov" or "Chen.Want". If none are specified then all applicable estimators
 could be chosen.}
 }

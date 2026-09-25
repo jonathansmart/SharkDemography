@@ -2,10 +2,20 @@
 % Please edit documentation in R/SharkDemography.R
 \docType{package}
 \name{SharkDemography.}
+\alias{SharkDemography}
+\alias{SharkDemography-package}
 \alias{SharkDemography.}
 \title{SharkDemography.}
 \description{
 A package to conduct Shark demographic analyses using Leslie matrix models.
+}
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/jonathansmart/SharkDemography}
+  \item Report bugs at \url{https://github.com/jonathansmart/SharkDemography/issues}
+}
+
 }
 \author{
 Jonathan Smart

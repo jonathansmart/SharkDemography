@@ -1067,8 +1067,8 @@ Estimate_mortality_dists <- function(n = 1000, data, M.estimators = NULL){
   M.table <- matrix(nrow = n, ncol = length(M.estimators))
   colnames(M.table)<- M.estimators
   # P_W_table <-  matrix(nrow = 100, ncol = n)
-  Charnov.table <- matrix(nrow = 100, ncol = n)
-  Chen.Wat.table <- matrix(nrow = 100, ncol = n)
+  Charnov.table <- matrix(nrow = 500, ncol = n)
+  Chen.Wat.table <- matrix(nrow = 500, ncol = n)
 
   pb <- txtProgressBar(title="Demography progress", label="0% done", min=0, max=100, initial=0, style = 3)
   for(i in 1:n){
@@ -1562,7 +1562,7 @@ Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, ASel = NULL, 
 #'     values
 #' @param n The number of simulations to be run. 1000 is recomended but smaller numbers
 #'     should be run when testing to avoid long run times.
-#' @param .data A multi-level list of the class `Demography.inputs` produced from the
+#' @param data A multi-level list of the class `Demography.inputs` produced from the
 #'     `create_data_input` function and then manually completed.
 #' @param M.estimators Any specific natural mortality estimators to be included in the analysis.
 #'     Only one will be used in each run which is randomly selected. Must be a single estimator
@@ -1593,7 +1593,7 @@ Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, ASel = NULL, 
 #' @import doParallel foreach iterators parallel doFuture
 #'
 
-Simulate_AAFC<- function(n = 1000, .data, M.estimators = NULL, max.AAFC = 15, n_cores = 1){
+Simulate_AAFC<- function(n = 1000, data, M.estimators = NULL, max.AAFC = 15, n_cores = 1){
 
 
   #input data checking ----
@@ -1681,7 +1681,7 @@ Simulate_AAFC<- function(n = 1000, .data, M.estimators = NULL, max.AAFC = 15, n_
 
                                                                       tryCatch(
                                                                         data.frame(AAFC = AAFC, F. = F. ,
-                                                                                   lambda = Calculate_demography(data = .data, AALC = NULL, AAFC = AAFC,
+                                                                                   lambda = Calculate_demography(data = data, AALC = NULL, AAFC = AAFC,
                                                                                                                  F. = F., M.estimators = M.estimators)$`lambda`),
                                                                         error=function(e){data.frame(AAFC = AAFC, F. = F. , lambda = NA)},
                                                                         silent = TRUE
@@ -1876,7 +1876,7 @@ Simulate_AALC <- function(n = 1000, data, M.estimators = NULL,  min.AALC = 15, n
 #'     the population. This determines the rate of population increase at each increment of F.
 #' @param n The number of simulations to be run. 1000 is recomended but smaller numbers
 #'     should be run when testing to avoid long run times.
-#' @param .data A multi-level list of the class `Demography.inputs` produced from the
+#' @param data A multi-level list of the class `Demography.inputs` produced from the
 #'     `create_data_input` function and then manually completed.
 #' @param M.estimators Any specific natural mortality estimators to be included in the analysis.
 #'     Only one will be used in each run which is randomly selected. Must be a single estimator
@@ -1902,7 +1902,7 @@ Simulate_AALC <- function(n = 1000, data, M.estimators = NULL,  min.AALC = 15, n
 #' Simulate_F_critical(n = 10, Silky_data, n_cores = 1)
 #' @import doParallel foreach iterators parallel doFuture
 
-Simulate_F_critical <- function(n = 1000, .data, M.estimators = NULL, ASel = NULL, max.F = 0.3, n_cores = 1){
+Simulate_F_critical <- function(n = 1000, data, M.estimators = NULL, ASel = NULL, max.F = 0.3, n_cores = 1){
 
 
   #input data checking ----
@@ -1981,7 +1981,7 @@ Simulate_F_critical <- function(n = 1000, .data, M.estimators = NULL, ASel = NUL
                                                    foreach::foreach(icount(n), .packages = c("iterators","popbio"),.combine = rbind, .inorder = FALSE,
                                                                     .export = c("Calculate_demography", ls(envir=globalenv()))) %dopar%{
                                                                       data.frame(F. = F. ,
-                                                                                 lambda = Calculate_demography(data = .data, AALC = NULL, AAFC = 0,
+                                                                                 lambda = Calculate_demography(data = data, AALC = NULL, AAFC = 0,
                                                                                                                F. = F., M.estimators = M.estimators)$`lambda`)
                                                                     }})
   } else {
@@ -1992,7 +1992,7 @@ Simulate_F_critical <- function(n = 1000, .data, M.estimators = NULL, ASel = NUL
                                                    foreach::foreach(icount(n), .packages = c("iterators","popbio"),.combine = rbind, .inorder = FALSE,
                                                                     .export = c("Calculate_demography", ls(envir=globalenv()))) %dopar%{
                                                                       data.frame(F. = F. ,
-                                                                                 lambda = Calculate_demography(data = .data, AALC = NULL, AAFC = NULL, ASel = ASel,
+                                                                                 lambda = Calculate_demography(data = data, AALC = NULL, AAFC = NULL, ASel = ASel,
                                                                                                                F. = F., M.estimators = M.estimators)$`lambda`)
                                                                     }})
 
