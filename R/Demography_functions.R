@@ -172,7 +172,7 @@ create_data_input <- function(maturity.type, t0 = FALSE){
 #' Calculate_demography(Silky_data)
 #'
 #' @export
-#' @import popbio
+#' @import popbio truncnorm
 #'
 Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, ASel = NULL, M.estimators = NULL){
 
@@ -380,7 +380,8 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, ASel = 
   # litter size which is transformed to number of female pups per female per year.
 
   if(!any(is.na(data$litter.size$mean), is.na(data$litter.size$se))){
-    litter.size <- rnorm(1, data$litter.size$mean, data$litter.size$se)
+    # litter.size <- rnorm(1, data$litter.size$mean, data$litter.size$se)
+    litter.size <- truncnorm::rtruncnorm(n = 1, a = 0.001, b = Inf, mean = data$litter.size$mean, sd = data$litter.size$se)
   } else {
     stop("No litter size mean and/or se specified")
   }
@@ -833,7 +834,8 @@ Estimate_eigenvectors <- function(n = 1000, data, M.estimators = NULL){
     # litter size which is transformed to number of female pups per female per year.
 
     if(!any(is.na(data$litter.size$mean), is.na(data$litter.size$se))){
-      litter.size <- rnorm(1, data$litter.size$mean, data$litter.size$se)
+      # litter.size <- rnorm(1, data$litter.size$mean, data$litter.size$se)
+      litter.size <- truncnorm::rtruncnorm(n = 1, a = 0.001, b = Inf, mean = data$litter.size$mean, sd = data$litter.size$se)
     } else {
       stop("No litter size mean and/or se specified")
     }
