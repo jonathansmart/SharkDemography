@@ -152,8 +152,9 @@ create_data_input <- function(maturity.type, t0 = FALSE){
 #'
 #' @return A list of parameters including: \describe{
 #' \item{lambda}{The finite rate of population growth}
-#' \item{R0}{The reproductive value of the population}
+#' \item{R0}{The reproductive rate of the population}
 #' \item{G}{The generation length of the population}
+#' \item{R0_mature}{The coniditional reproductive rate of the population}
 #' \item{elast.fecund}{The mean elasticity of the fecundity elements}
 #' \item{elast.juv.survival}{The mean elasticity of the juvenile survivoship elements}
 #' \item{juv.ratio}{The ratio of fecundity to juvenile elasticities}
@@ -542,8 +543,12 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, ASel = 
     lx[j] <- lx[j-1]*survivorship[j-1]
   }
 
+
+
   # Net reproductive rate
   R0 <- sum(mx*lx)
+
+  R0_mature <- R0 / lx[age_at_first_repro]
 
   #Generation time
   G <- sum(Age*(exp(-r*Age)*(mx*lx)))
@@ -581,6 +586,7 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, ASel = 
   Results <- list(lambda = lambda,
                   R0 = R0 ,
                   G = G,
+                  R0_mature = R0_mature,
                   elast.fecund = elast.fecund,
                   elast.juv.survival = elast.juv.survival,
                   elast.adult.survival = elast.adult.survival,
@@ -1447,6 +1453,7 @@ Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, ASel = NULL, 
   lambda.results <- NULL
   R0.results <- NULL
   G.results <- NULL
+  R0.mature.results <- NULL
   elast.fecund <- NULL
   elast.juv.survival <- NULL
   elast.adult.survival <- NULL
@@ -1471,6 +1478,7 @@ Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, ASel = NULL, 
         lambda.results[i] <- tmp$`lambda`;
         R0.results[i] <- tmp$`R0`;
         G.results[i] <- tmp$`G`;
+        R0.mature.results[i] <- tmp$`R0_mature`;
         elast.fecund[i] <-  tmp$elast.fecund;
         elast.juv.survival[i] <-  tmp$elast.juv.survival;
         elast.adult.survival[i] <- tmp$elast.adult.survival;
@@ -1482,6 +1490,7 @@ Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, ASel = NULL, 
         lambda.results[i] <- NA;
         R0.results[i] <- NA;
         G.results[i] <-NA;
+        R0.mature.results[i] <- NA;
         elast.fecund[i] <-  NA;
         elast.juv.survival[i] <-  NA;
         elast.adult.survival[i] <- NA;
@@ -1515,6 +1524,9 @@ Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, ASel = NULL, 
   R0.summary <- c(mean(R0.results, na.rm = TRUE),
                   quantile(R0.results, c(.025, .975),na.rm = TRUE))
 
+  R0.mature.summary <- c(mean(R0.mature.results, na.rm = TRUE),
+                  quantile(R0.mature.results, c(.025, .975),na.rm = TRUE))
+
   elast.fecund.summary <- c(mean(elast.fecund, na.rm = TRUE),
                             quantile(elast.fecund, c(.025, .975),na.rm = TRUE))
   elast.juv.survival.summary <- c(mean(elast.juv.survival, na.rm = TRUE),
@@ -1529,6 +1541,7 @@ Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, ASel = NULL, 
   simulations <- dplyr::bind_cols(Lambda = lambda.results,
                                   R0 = R0.results,
                                   G = G.results,
+                                  R0_mature = R0.mature.results,
                                   elast.fecund = elast.fecund,
                                   elast.juv.survival = elast.juv.survival,
                                   elast.adult.survival = elast.adult.survival,
@@ -1536,13 +1549,14 @@ Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, ASel = NULL, 
                                   adult.ratio = adult.ratio,
                                   M.estimator = M.estimator)
 
-  Results <- rbind(lambda.summary,G.summary,R0.summary,
+  Results <- rbind(lambda.summary,G.summary,R0.summary,R0.mature.summary,
                    elast.fecund.summary,elast.juv.survival.summary,elast.adult.survival.summary,
                    juv.ratio.summary, adult.ratio.summary)
   colnames(Results) <- c("Mean",".025",".975")
   rownames(Results) <- c("Lambda",
                          "Generation Time",
                          "Net Repro Rate",
+                         "Conditional Net Repro Rate",
                          "Fertility elasisticy",
                          "Juvenile elasticity ",
                          "Adult elasticity ",
