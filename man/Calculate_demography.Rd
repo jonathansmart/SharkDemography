@@ -37,8 +37,9 @@ could be chosen.}
 \value{
 A list of parameters including: \describe{
 \item{lambda}{The finite rate of population growth}
-\item{R0}{The reproductive value of the population}
+\item{R0}{The reproductive rate of the population}
 \item{G}{The generation length of the population}
+\item{R0_mature}{The coniditional reproductive rate of the population}
 \item{elast.fecund}{The mean elasticity of the fecundity elements}
 \item{elast.juv.survival}{The mean elasticity of the juvenile survivoship elements}
 \item{juv.ratio}{The ratio of fecundity to juvenile elasticities}
