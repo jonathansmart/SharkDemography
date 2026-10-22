@@ -514,7 +514,7 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, LenSel 
     }
 
     # Calculate and re-scale
-    S_a <- (ALK %*% S_L) / max(ALK %*% S_L)
+    ASel <- (ALK %*% S_L) / max(ALK %*% S_L)
 
 
     # Extend final ASel value to the full age range of this simulation
@@ -644,6 +644,225 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, LenSel 
 }
 
 
+#' Estimate selectivity-at-age based on selectivity-at-length through Monte Carlo simulations
+#'
+#' @param n The number of simulations to be run
+#' @param data A multi-level list of the class `Demography.inputs` produced from the
+#'     `create_data_input` function and then manually completed.
+#' @param LenSel A dataframe with two columns: length and Selectivity-at-length
+#' @param ALK_CV The coefficient of variation in length-at-age to be used in the age-length
+#'     key for the length to age conversion. Default = 0.2.
+#'
+#' @returns A two element list with a dataframe summarising the selectivity-at-age (mean & 95% CIs)
+#'     and a vector with the age-at-maturity (mean & 95% CIs) of the simulations.
+#' @export
+
+Estimate_Age_Selectivity <- function(n = 1000, data, LenSel = NULL, ALK_CV = 0.2){
+
+
+
+  if(!inherits(data,"Demography.inputs")) stop("Input data is not the correct based on the demography data list")
+
+  if(!data$growth$model.type %in%  c("Von Bertalanffy", "logistic", "Gompertz"))
+    stop("Growth model type not correctly specified")
+
+  if (!is.null(LenSel) && (!is.data.frame(LenSel) || !all(c("Length", "Selectivity") %in% names(LenSel)) || ncol(LenSel) != 2)) {
+    stop("LenSel must be a two-column data.frame with 'Length' and 'Selectivity'.")
+  }
+
+  if(is.na(data$max.age$min)) stop("No min age specified")
+  ASel.results <- matrix(nrow = round(data$max.age$min)+1, ncol = n)
+  Maturity.results <- vector(length = n) # vector of length n
+  Maturity.results[1:n] <- NA_real_ # fill with NA's
+
+  pb <- txtProgressBar(title="Demography progress", label="0% done", min=0, max=100, initial=0, style = 3)
+  for(i in 1:n){
+    info <- sprintf("%d%% done", round((i/n)*100))
+    setTxtProgressBar(pb, (i/n)*100, label=info)
+
+
+    ### Estimate growth ----------------
+
+    # If L0 is being used
+    if(!any(names(data$growth$pars) %in% "t0")){
+
+      Linf.se <- data$growth$se$Linf.se
+      k.se <- data$growth$se$k.se
+      L0.se <- data$growth$se$L0.se
+
+      # if the parameter correlation is provided used a MVN dist
+      if(all(!is.na(data$growth$corr.matrix))){
+        e.cov <- data$growth$corr.matrix*as.matrix(c(Linf.se, k.se, L0.se))%*%t(as.matrix(c(Linf.se, k.se, L0.se)))
+        growth_pars <- MASS::mvrnorm(1, mu = c(data$growth$pars$Linf, data$growth$pars$k, data$growth$pars$L0), Sigma = e.cov)
+        Linf <-as.numeric(growth_pars["Linf"])
+        k <- as.numeric(growth_pars["k"])
+        L0 <- as.numeric(growth_pars["L0"])
+      } else if(all(!is.na(Linf.se),!is.na(k.se),!is.na(L0.se))){
+        #If MVN can't be used, then vary parameters based on normal dists
+        Linf <- rnorm(1, data$growth$pars$Linf, Linf.se)
+        k <- rnorm(1, data$growth$pars$k, k.se)
+        L0 <- rnorm(1, data$growth$pars$L0, L0.se)
+      } else{
+        # if no errors available then just use the parameters
+        warning("Growth is deterministic as no growth parameter errors were provided")
+        Linf <- data$growth$pars$Linf
+        k <- data$growth$pars$k
+        L0 <- data$growth$pars$L0
+      }
+    } else {
+      # If t0 is being used the same approach is applied but without L0
+      Linf.se <- data$growth$se$Linf.se
+      k.se <- data$growth$se$k.se
+      t0.se <- data$growth$se$t0.se
+
+      if(all(!is.na(data$growth$corr.matrix))){
+        e.cov <- data$growth$corr.matrix*as.matrix(c(Linf.se, k.se, t0.se))%*%t(as.matrix(c(Linf.se, k.se, t0.se)))
+        growth_pars <- MASS::mvrnorm(1, mu = c(data$growth$pars$Linf, data$growth$pars$k, data$growth$pars$t0), Sigma = e.cov)
+        Linf <-as.numeric(growth_pars["Linf"])
+        k <- as.numeric(growth_pars["k"])
+        t0 <- as.numeric(growth_pars["t0"])
+      } else if(all(!is.na(Linf.se),!is.na(k.se),!is.na(t0.se))){
+        Linf <- rnorm(1, data$growth$pars$Linf, Linf.se)
+        k <- rnorm(1, data$growth$pars$k, k.se)
+        t0 <- rnorm(1, data$growth$pars$t0, t0.se)
+      } else{
+        warning("Growth is deterministic as no growth parameter errors were provided")
+        Linf <- data$growth$pars$Linf
+        k <- data$growth$pars$k
+        t0 <- data$growth$pars$t0
+      }
+    }
+
+    # Set max age lower bound
+    max.age <- data$max.age$min
+    Age <- 0:max.age
+
+
+    # Length-at-age estimates
+    if(data$`growth`$model.type == "logistic"){
+      Lt <- Linf*L0*exp(k*Age)/(Linf+L0*(exp(k*Age)-1))
+    } else if(data$`growth`$model.type == "Von Bertalanffy"){
+      if(!any(names(data$growth$pars) %in% "t0")){
+        Lt <- Linf-(Linf-L0)*(exp(-k*Age))
+      } else {
+        Lt <- Linf*(1-exp(-k*(Age-t0)))
+      }
+    } else if(data$`growth`$model.type == "Gompertz"){
+      Lt <- L0*(exp(log(Linf/L0)*(1-exp(-k*Age))))
+    } else {
+      stop("model.type incorrectely specific for growth")
+    }
+
+    #----End growth calcs------------------
+
+    if(!is.na(data$gest.period)){
+      gest.period <- data$gest.period
+    } else {
+      stop("No gestation period specified")
+    }
+    if(!is.na(data$repro.cycle)){
+      repro.cycle <- data$repro.cycle
+    } else {
+      stop("No reproductive cycle (periodicity) specified")
+    }
+
+
+    #Maturity ogive
+    if(data$maturity$model.type == "logistic - int/slope"){
+      mat.cov <- data$maturity$corr.matrix*as.matrix(c(data$maturity$se$intercept.se, data$maturity$se$slope.se))%*%
+        t(as.matrix(c(data$maturity$se$intercept.se, data$maturity$se$slope.se)))
+
+      Mat_pars <- MASS::mvrnorm(1, mu = c(data$maturity$pars$intercept, data$maturity$pars$slope), Sigma = mat.cov)
+      Mat_intercept <- as.numeric(Mat_pars[1])
+      Mat_slope <-as.numeric(Mat_pars[2])
+      Maturity_ogive <- round(1/(1+exp(-(Age*Mat_slope+Mat_intercept))),2)
+      age_at_maturity <- which.max(Maturity_ogive > 0.5) # assign age-at-maturity based on inflection of ogive
+      age_at_first_repro <- round(gest.period+age_at_maturity)
+      Fecundity_ogive <- round(1/(1+exp(-((Age-gest.period)*Mat_slope+Mat_intercept))),2)
+    } else if(data$maturity$model.type == "logistic - a50/a95"){
+      Mat_a50 <- rnorm(1,data$maturity$pars$a50, data$maturity$se$a50.se)
+      Mat_a95 <- rnorm(1,data$maturity$pars$a95, data$maturity$se$a95.se)
+      Maturity_ogive <- round(1*(1+exp(-log(19)*((Age-Mat_a50)/(Mat_a95-Mat_a50))))^-1,2)
+      age_at_maturity <- which.max(Maturity_ogive > 0.5) # assign age-at-maturity based on inflection of ogive
+      age_at_first_repro <- round(gest.period+age_at_maturity)
+      Fecundity_ogive <- round( 1*(1+exp(-log(19)*(((Age-gest.period)-Mat_a50)/(Mat_a95-Mat_a50))))^-1,2)
+    } else if(data$maturity$model.type == "uniform"){
+      age_at_maturity <- runif(1,data$maturity$pars$min, data$maturity$pars$max)
+      age_at_first_repro <- round(gest.period+age_at_maturity)
+    } else if(data$maturity$model.type == "normal"){
+      age_at_maturity <- rnorm(1,data$maturity$pars$mean, data$maturity$pars$se)
+      age_at_first_repro <- round(gest.period+age_at_maturity)
+    } else {
+      stop("Maturity model type is not correctly specified.")
+    }
+
+    # If the age at first repro is older than the max age in a sim, reassign it.
+    if(max.age < age_at_first_repro){
+      age_at_first_repro <- max.age - 1
+      age_at_maturity <- age_at_first_repro - gest.period
+    }
+
+
+
+
+
+    # Overide if LenSel is specified but provide warning
+    if(!is.null(LenSel)){
+
+      Length_bins <- LenSel$Length
+      S_L <-LenSel$Selectivity
+
+
+      # Age-Length Key Matrix
+      ALK <- matrix(0, nrow = length(Age), ncol = length(Length_bins))
+
+      for (j in seq_along(Age)) {
+
+        mu_a <- Lt[j]
+        sigma_a <- mu_a * ALK_CV
+
+        # Bin cutoffs
+        bin_width <- Length_bins[2] - Length_bins[1]
+        L_lo <- Length_bins - (bin_width / 2)
+        L_hi <- Length_bins + (bin_width / 2)
+
+        # Calculate bin probabilities
+        ALK[j, ] <- pnorm(L_hi, mean = mu_a, sd = sigma_a) - pnorm(L_lo, mean = mu_a, sd = sigma_a)
+
+        # Normalize row
+        ALK[j, ] <- ALK[j, ] / sum(ALK[j, ])
+      }
+
+      # Calculate and re-scale
+      ASel <- (ALK %*% S_L) / max(ALK %*% S_L)
+
+    }
+
+
+    ASel.results[,i] <- ASel
+    Maturity.results[i] <- age_at_maturity
+  }
+
+  # Summarise results
+
+  ASel.summary <- data.frame(Age = 0:(nrow(ASel.results)-1),
+                             mean = apply(ASel.results,1,mean, na.rm = TRUE),
+                             low = apply(ASel.results, 1, quantile, probs = c(.025), na.rm = TRUE),
+                             upp =apply(ASel.results, 1, quantile, probs = c(.975), na.rm = TRUE))
+
+
+  Maturity.summary <- c(Average = mean(Maturity.results, na.rm = TRUE),
+                        quantile(Maturity.results, probs = c(.025), na.rm = TRUE),
+                        quantile(Maturity.results, probs = c(.975), na.rm = TRUE))
+
+  Results <- list(`Selectivity-at-age` = ASel.summary, `Age-at-maturity` = Maturity.summary)
+
+  return(Results)
+
+
+}
+
+
 
 #' Estimate the left and right eigenvectors (Reproductive value: v and Stable age distribution: w)
 #'
@@ -657,6 +876,8 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, LenSel 
 #'      Must be a single estimator or a vector of estimators. These can include:
 #'     "Jensen.mat","Chen.Yuan","Then_hoenig","Then_pauly", "Jensen.mat","Charnov" or
 #'     "Chen.Want". If none are specified then all applicable estimators could be chosen.
+#' @param return.maturity If TRUE returns a vector with the age-at-maturity results from the
+#'     simulations.
 #'
 #' @return A dataframe with the mean and 95\% quantiles for each eigenvector for each age
 #'     class
@@ -671,7 +892,7 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, LenSel 
 #'
 #' Estimate_eigenvectors(n = 100, Silky_data)
 #' @export
-Estimate_eigenvectors <- function(n = 1000, data, M.estimators = NULL){
+Estimate_eigenvectors <- function(n = 1000, data, M.estimators = NULL, return.maturity = FALSE){
 
   ## Error messages ------------------
 
@@ -739,7 +960,8 @@ Estimate_eigenvectors <- function(n = 1000, data, M.estimators = NULL){
   if(is.na(data$max.age$min)) stop("No min age specified")
   Stable.age.results <- matrix(nrow = round(data$max.age$min*1.2) + 2, ncol = n)
   Repro.val.results <- matrix(nrow = round(data$max.age$min*1.2) + 2, ncol = n)
-
+  Maturity.results <- vector(length = n) # vector of length n
+  Maturity.results[1:n] <- NA_real_ # fill with NA's
 
   pb <- txtProgressBar(title="Demography progress", label="0% done", min=0, max=100, initial=0, style = 3)
   for(i in 1:n){
@@ -796,6 +1018,7 @@ Estimate_eigenvectors <- function(n = 1000, data, M.estimators = NULL){
     }
 
     # Set max age lower bound
+
     if(!is.na(data$max.age$min)){
       max.age <- tmax <- round(data$max.age$min*1.2)
     } else {
@@ -998,6 +1221,8 @@ Estimate_eigenvectors <- function(n = 1000, data, M.estimators = NULL){
 
     Stable.age.results[,i] <- popbio::eigen.analysis(A)$stable.stage
     Repro.val.results[,i] <- popbio::eigen.analysis(A)$repro.value
+    Maturity.results[i] <- age_at_maturity
+
 
   }
 
@@ -1012,7 +1237,21 @@ Estimate_eigenvectors <- function(n = 1000, data, M.estimators = NULL){
                                 mean = apply(Repro.val.results,1,mean, na.rm = TRUE),
                                 low = apply(Repro.val.results, 1, quantile, probs = c(.025), na.rm = TRUE),
                                 upp =apply(Repro.val.results, 1, quantile, probs = c(.975), na.rm = TRUE))
-  results <- rbind(Stable.age.results, Repro.val.results)
+
+  Maturity.summary <- c(Average = mean(Maturity.results, na.rm = TRUE),
+                        quantile(Maturity.results, probs = c(.025), na.rm = TRUE),
+                        quantile(Maturity.results, probs = c(.975), na.rm = TRUE))
+
+  if(return.maturity){
+    results <- list(Eigenvectors = rbind(Stable.age.results, Repro.val.results),
+                    `Age-at-maturity` = Maturity.summary)
+
+  } else{
+    results <- rbind(Stable.age.results, Repro.val.results)
+  }
+
+
+
 
   close(pb)
   return(results)
@@ -1560,7 +1799,7 @@ Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, LenSel = NULL
                   quantile(R0.results, c(.025, .975),na.rm = TRUE))
 
   R0.mature.summary <- c(mean(R0.mature.results, na.rm = TRUE),
-                  quantile(R0.mature.results, c(.025, .975),na.rm = TRUE))
+                         quantile(R0.mature.results, c(.025, .975),na.rm = TRUE))
 
   elast.fecund.summary <- c(mean(elast.fecund, na.rm = TRUE),
                             quantile(elast.fecund, c(.025, .975),na.rm = TRUE))
