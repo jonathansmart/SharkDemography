@@ -175,7 +175,7 @@ create_data_input <- function(maturity.type, t0 = FALSE){
 #' @export
 #' @import popbio truncnorm
 #'
-Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, ASel = NULL, M.estimators = NULL){
+Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, LenSel = NULL, ALK_CV = 0.2, M.estimators = NULL){
 
   ### Error messages --------------
 
@@ -213,12 +213,16 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, ASel = 
   if(data$growth$model.type != "Von Bertalanffy") M.estimators <- M.estimators[which(!M.estimators %in% c("Chen-Wat", "Charnov", "Jensen_k1", "Then_VBGF", "Hamel_k"))]
   if(length(M.estimators) == 0) stop("Specified mortality estimators could not be applied")
 
-  if(is.null(AALC) & is.null(AAFC) & is.null(ASel) & F. > 0){
-    warning("No fishing mortality applied as neither AAFC, AALC, or ASel are specified")
+  if(is.null(AALC) & is.null(AAFC) & is.null(LenSel) & F. > 0){
+    warning("No fishing mortality applied as neither AAFC, AALC, or LenSel are specified")
   }
 
-  if(any(!is.null(AAFC), !is.null(AALC))& !is.null(ASel))
-    warning("AAFC or AALC specified but are overridden by ASel. Don't use these in combination")
+  if(any(!is.null(AAFC), !is.null(AALC))& !is.null(LenSel))
+    warning("AAFC or AALC specified but are overridden by LenSel Don't use these in combination")
+
+  if (!is.null(LenSel) && (!is.data.frame(LenSel) || !all(c("Length", "Selectivity") %in% names(LenSel)) || ncol(LenSel) != 2)) {
+    stop("LenSel must be a two-column data.frame with 'Length' and 'Selectivity'.")
+  }
 
   ### Estimate growth ----------------
 
@@ -482,8 +486,36 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, ASel = 
     }
   }
 
-  # Overide if ASel is specified but provide warning
-  if(!is.null(ASel)){
+  # Overide if LenSel is specified but provide warning
+  if(!is.null(LenSel)){
+
+    Length_bins <- LenSel$Length
+    S_L <-LenSel$Selectivity
+
+
+    # Age-Length Key Matrix
+    ALK <- matrix(0, nrow = length(Age), ncol = length(Length_bins))
+
+    for (i in seq_along(Age)) {
+
+      mu_a <- Lt[i]
+      sigma_a <- mu_a * ALK_CV
+
+      # Bin cutoffs
+      bin_width <- Length_bins[2] - Length_bins[1]
+      L_lo <- Length_bins - (bin_width / 2)
+      L_hi <- Length_bins + (bin_width / 2)
+
+      # Calculate bin probabilities
+      ALK[i, ] <- pnorm(L_hi, mean = mu_a, sd = sigma_a) - pnorm(L_lo, mean = mu_a, sd = sigma_a)
+
+      # Normalize row
+      ALK[i, ] <- ALK[i, ] / sum(ALK[i, ])
+    }
+
+    # Calculate and re-scale
+    S_a <- (ALK %*% S_L) / max(ALK %*% S_L)
+
 
     # Extend final ASel value to the full age range of this simulation
     Asel_extended <-  append(ASel,rep( ASel[length(ASel)],length(Mortality)-length(ASel)))
@@ -610,6 +642,7 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, ASel = 
   return(Results)
 
 }
+
 
 
 #' Estimate the left and right eigenvectors (Reproductive value: v and Stable age distribution: w)
@@ -1386,7 +1419,7 @@ Estimate_mortality_dists <- function(n = 1000, data, M.estimators = NULL){
 #'
 #' Simulate_demography(n = 100, Silky_data)
 #' @export
-Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, ASel = NULL, F. = 0, M.estimators = NULL, Verbatim = TRUE){
+Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, LenSel = NULL, ALK_CV = 0.2, F. = 0, M.estimators = NULL, Verbatim = TRUE){
 
 
   #input data checking ----
@@ -1446,7 +1479,9 @@ Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, ASel = NULL, 
   if(any(is.na(data$litter.size$mean), is.na(data$litter.size$se)))
     stop("No litter size mean and/or se specified")
 
-
+  if (!is.null(LenSel) && (!is.data.frame(LenSel) || !all(c("Length", "Selectivity") %in% names(LenSel)) || ncol(LenSel) != 2)) {
+    stop("LenSel must be a two-column data.frame with 'Length' and 'Selectivity'.")
+  }
 
   # Analysis -----
 
@@ -1474,7 +1509,7 @@ Simulate_demography <- function(n, data, AALC = NULL, AAFC = NULL, ASel = NULL, 
 
     tryCatch(
       {
-        tmp <- Calculate_demography(data = data, AAFC = AAFC, ASel = ASel, F. = F., AALC = AALC, M.estimators = M.estimators);
+        tmp <- Calculate_demography(data = data, AAFC = AAFC, LenSel = LenSel, ALK_CV = ALK_CV, F. = F., AALC = AALC, M.estimators = M.estimators);
         lambda.results[i] <- tmp$`lambda`;
         R0.results[i] <- tmp$`R0`;
         G.results[i] <- tmp$`G`;
@@ -1918,7 +1953,7 @@ Simulate_AALC <- function(n = 1000, data, M.estimators = NULL,  min.AALC = 15, n
 #' Simulate_F_critical(n = 10, Silky_data, n_cores = 1)
 #' @import doParallel foreach iterators parallel doFuture
 
-Simulate_F_critical <- function(n = 1000, data, M.estimators = NULL, ASel = NULL, max.F = 0.3, n_cores = 1){
+Simulate_F_critical <- function(n = 1000, data, M.estimators = NULL, LenSel = NULL, ALK_CV = 0.2, max.F = 0.3, n_cores = 1){
 
 
   #input data checking ----
@@ -1989,7 +2024,7 @@ Simulate_F_critical <- function(n = 1000, data, M.estimators = NULL, ASel = NULL
   doParallel::registerDoParallel(cl)
   doFuture::registerDoFuture()
 
-  if(is.null(ASel)){
+  if(is.null(LenSel)){
     results <- suppressWarnings(foreach::foreach(F. = F.range, .combine = rbind, .packages = c("popbio","iterators"),
                                                  .inorder = TRUE,
                                                  .export = c("Calculate_demography", "AAFC", "data", "M.estimators", "n",ls(envir=globalenv()))) %dopar%{
@@ -2008,7 +2043,8 @@ Simulate_F_critical <- function(n = 1000, data, M.estimators = NULL, ASel = NULL
                                                    foreach::foreach(icount(n), .packages = c("iterators","popbio"),.combine = rbind, .inorder = FALSE,
                                                                     .export = c("Calculate_demography", ls(envir=globalenv()))) %dopar%{
                                                                       data.frame(F. = F. ,
-                                                                                 lambda = Calculate_demography(data = data, AALC = NULL, AAFC = NULL, ASel = ASel,
+                                                                                 lambda = Calculate_demography(data = data, AALC = NULL, AAFC = NULL,
+                                                                                                               LenSel = LenSel, ALK_CV = ALK_CV,
                                                                                                                F. = F., M.estimators = M.estimators)$`lambda`)
                                                                     }})
 
