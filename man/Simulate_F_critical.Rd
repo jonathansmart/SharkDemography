@@ -8,7 +8,8 @@ Simulate_F_critical(
   n = 1000,
   data,
   M.estimators = NULL,
-  ASel = NULL,
+  LenSel = NULL,
+  ALK_CV = 0.2,
   max.F = 0.3,
   n_cores = 1
 )

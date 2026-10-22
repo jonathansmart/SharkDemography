@@ -9,7 +9,8 @@ Simulate_demography(
   data,
   AALC = NULL,
   AAFC = NULL,
-  ASel = NULL,
+  LenSel = NULL,
+  ALK_CV = 0.2,
   F. = 0,
   M.estimators = NULL,
   Verbatim = TRUE

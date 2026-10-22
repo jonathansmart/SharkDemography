@@ -9,7 +9,8 @@ Calculate_demography(
   AAFC = NULL,
   F. = 0,
   AALC = NULL,
-  ASel = NULL,
+  LenSel = NULL,
+  ALK_CV = 0.2,
   M.estimators = NULL
 )
 }

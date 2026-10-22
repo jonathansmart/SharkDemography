@@ -143,6 +143,9 @@ create_data_input <- function(maturity.type, t0 = FALSE){
 #'      ages available to capture as defined by either the AALC or AAFC arguments.
 #' @param AALC Age-at-last-capture which can be specified by the user or automated in the
 #'     `Simulate_AALC` function. Must be an integer age which can include zero.
+#' @param LenSel A dataframe with two columns: length and Selectivity-at-length
+#' @param ALK_CV The coefficient of variation in length-at-age to be used in the age-length
+#'     key for the length to age conversion. Default = 0.2.
 #' @param M.estimators Any specific natural mortality estimators to be included in the analysis.
 #'     Only one will be used in each run which is randomly selected. In the simulation functions
 #'     these will be varied among simulations. Must be a single estimator or a vector of estimators.
@@ -1637,6 +1640,9 @@ Estimate_mortality_dists <- function(n = 1000, data, M.estimators = NULL){
 #'     ages available to capture as defined by either the AALC or AAFC arguments.
 #' @param AALC Age-at-last-capture which can be specified by the user. Must be an integer
 #'     age which can include zero.
+#' @param LenSel A dataframe with two columns: length and Selectivity-at-length
+#' @param ALK_CV The coefficient of variation in length-at-age to be used in the age-length
+#'     key for the length to age conversion. Default = 0.2.
 #' @param M.estimators Any specific natural mortality estimators to be included in the analysis.
 #'     Only one will be used in each run which is randomly selected. Must be a single estimator
 #'     or a vector of estimators. These can include: "Jensen.mat","Chen.Yuan",
@@ -2173,6 +2179,9 @@ Simulate_AALC <- function(n = 1000, data, M.estimators = NULL,  min.AALC = 15, n
 #'     or a vector of estimators. These can include: "Jensen.mat","Chen.Yuan",
 #'     "Then_hoenig","Then_pauly", "Jensen.mat","Charnov" or "Chen.Want". If none are specified
 #'     then all applicable estimators could be chosen.
+#' @param LenSel A dataframe with two columns: length and Selectivity-at-length
+#' @param ALK_CV The coefficient of variation in length-at-age to be used in the age-length
+#'     key for the length to age conversion. Default = 0.2.
 #' @param max.F The maximum value of F for simulations
 #' @param n_cores The number of cores to be used for parallel processing. It should be 1 core less than the
 #'     maximum number available.
