@@ -27,6 +27,11 @@ or a vector of estimators. These can include: "Jensen.mat","Chen.Yuan",
 "Then_hoenig","Then_pauly", "Jensen.mat","Charnov" or "Chen.Want". If none are specified
 then all applicable estimators could be chosen.}
 
+\item{LenSel}{A dataframe with two columns: length and Selectivity-at-length}
+
+\item{ALK_CV}{The coefficient of variation in length-at-age to be used in the age-length
+key for the length to age conversion. Default = 0.2.}
+
 \item{max.F}{The maximum value of F for simulations}
 
 \item{n_cores}{The number of cores to be used for parallel processing. It should be 1 core less than the

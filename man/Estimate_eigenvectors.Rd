@@ -4,7 +4,12 @@
 \alias{Estimate_eigenvectors}
 \title{Estimate the left and right eigenvectors (Reproductive value: v and Stable age distribution: w)}
 \usage{
-Estimate_eigenvectors(n = 1000, data, M.estimators = NULL)
+Estimate_eigenvectors(
+  n = 1000,
+  data,
+  M.estimators = NULL,
+  return.maturity = FALSE
+)
 }
 \arguments{
 \item{n}{The number of simulations to be run}
@@ -16,6 +21,9 @@ Estimate_eigenvectors(n = 1000, data, M.estimators = NULL)
  Must be a single estimator or a vector of estimators. These can include:
 "Jensen.mat","Chen.Yuan","Then_hoenig","Then_pauly", "Jensen.mat","Charnov" or
 "Chen.Want". If none are specified then all applicable estimators could be chosen.}
+
+\item{return.maturity}{If TRUE returns a vector with the age-at-maturity results from the
+simulations.}
 }
 \value{
 A dataframe with the mean and 95\% quantiles for each eigenvector for each age

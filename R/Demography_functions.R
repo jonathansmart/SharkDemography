@@ -350,19 +350,41 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, LenSel 
 
   #Maturity ogive
   if(data$maturity$model.type == "logistic - int/slope"){
-    mat.cov <- data$maturity$corr.matrix*as.matrix(c(data$maturity$se$intercept.se, data$maturity$se$slope.se))%*%
-      t(as.matrix(c(data$maturity$se$intercept.se, data$maturity$se$slope.se)))
+    if(all(!is.na(data$maturity$corr.matrix))){
+      mat.cov <- data$maturity$corr.matrix*as.matrix(c(data$maturity$se$intercept.se, data$maturity$se$slope.se))%*%
+        t(as.matrix(c(data$maturity$se$intercept.se, data$maturity$se$slope.se)))
 
-    Mat_pars <- MASS::mvrnorm(1, mu = c(data$maturity$pars$intercept, data$maturity$pars$slope), Sigma = mat.cov)
-    Mat_intercept <- as.numeric(Mat_pars[1])
-    Mat_slope <-as.numeric(Mat_pars[2])
+      Mat_pars <- MASS::mvrnorm(1, mu = c(data$maturity$pars$intercept, data$maturity$pars$slope), Sigma = mat.cov)
+      Mat_intercept <- as.numeric(Mat_pars[1])
+      Mat_slope <-as.numeric(Mat_pars[2])
+    } else if (all(!is.na(data$maturity$se$intercept.se),!is.na(data$maturity$se$slope.se))){
+      Mat_intercept <- rnorm(1,data$maturity$pars$intercept, data$maturity$se$intercept.se)
+      Mat_slope <- rnorm(1,data$maturity$pars$slope, data$maturity$se$slope.se)
+    } else {
+      warning("Maturity (logistic - int/slope) is deterministic as no growth parameter errors were provided")
+      Mat_intercept <- data$maturity$pars$intercept
+      Mat_slope <- data$maturity$pars$slope
+    }
     Maturity_ogive <- round(1/(1+exp(-(Age*Mat_slope+Mat_intercept))),2)
     age_at_maturity <- which.max(Maturity_ogive > 0.5) # assign age-at-maturity based on inflection of ogive
     age_at_first_repro <- round(gest.period+age_at_maturity)
     Fecundity_ogive <- round(1/(1+exp(-((Age-gest.period)*Mat_slope+Mat_intercept))),2)
   } else if(data$maturity$model.type == "logistic - a50/a95"){
-    Mat_a50 <- rnorm(1,data$maturity$pars$a50, data$maturity$se$a50.se)
-    Mat_a95 <- rnorm(1,data$maturity$pars$a95, data$maturity$se$a95.se)
+
+    if(all(!is.na(data$maturity$corr.matrix))){
+      mat.cov <- data$maturity$corr.matrix*as.matrix(c(data$maturity$se$a50.se, data$maturity$se$a95.se))%*%
+        t(as.matrix(c(data$maturity$se$a50.se, data$maturity$se$a95.se)))
+      Mat_pars <- MASS::mvrnorm(1, mu = c(data$maturity$pars$a50, data$maturity$pars$a95), Sigma = mat.cov)
+      Mat_a50 <- as.numeric(Mat_pars[1])
+      Mat_a95 <-as.numeric(Mat_pars[2])
+    }else if(all(!is.na(data$maturity$se$a50.se),!is.na(data$maturity$se$a95.se))){
+      Mat_a50 <- rnorm(1,data$maturity$pars$a50, data$maturity$se$a50.se)
+      Mat_a95 <- rnorm(1,data$maturity$pars$a95, data$maturity$se$a95.se)
+    } else{
+      warning("Maturity (logistic - a50/a95) is deterministic as no growth parameter errors were provided")
+      Mat_a50 <- data$maturity$pars$a50
+      Mat_a95 <- data$maturity$pars$a95
+    }
     Maturity_ogive <- round(1*(1+exp(-log(19)*((Age-Mat_a50)/(Mat_a95-Mat_a50))))^-1,2)
     age_at_maturity <- which.max(Maturity_ogive > 0.5) # assign age-at-maturity based on inflection of ogive
     age_at_first_repro <- round(gest.period+age_at_maturity)
@@ -376,6 +398,7 @@ Calculate_demography <- function(data, AAFC = NULL, F. = 0, AALC = NULL, LenSel 
   } else {
     stop("Maturity model type is not correctly specified.")
   }
+
 
   # If the age at first repro is older than the max age in a sim, reassign it.
   if(max.age < age_at_first_repro){

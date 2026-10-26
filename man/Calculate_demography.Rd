@@ -28,6 +28,11 @@ ages available to capture as defined by either the AALC or AAFC arguments.}
 \item{AALC}{Age-at-last-capture which can be specified by the user or automated in the
 `Simulate_AALC` function. Must be an integer age which can include zero.}
 
+\item{LenSel}{A dataframe with two columns: length and Selectivity-at-length}
+
+\item{ALK_CV}{The coefficient of variation in length-at-age to be used in the age-length
+key for the length to age conversion. Default = 0.2.}
+
 \item{M.estimators}{Any specific natural mortality estimators to be included in the analysis.
 Only one will be used in each run which is randomly selected. In the simulation functions
 these will be varied among simulations. Must be a single estimator or a vector of estimators.
